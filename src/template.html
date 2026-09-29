@@ -1,0 +1,3190 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<title>Vision — Streamline the shop virtual</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Vertex — a storefront for the Tsingtao range. Browse the lager, zero-alcohol and craft lines and order chilled.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+<script>
+/* Armed before first paint so the entrance timeline can never lose the race
+   against layout. The 4s failsafe guarantees content is never stranded hidden. */
+document.documentElement.classList.add('intro');
+setTimeout(function(){document.documentElement.classList.remove('intro');},4000);
+</script>
+<style>
+/* ============ 0. RESET ============ */
+*{margin:0;padding:0;box-sizing:border-box}
+/* ================= BRAND TOKENS =================
+   Pulled verbatim from the live site's stylesheet so this page and
+   tsingtaovietnam.com cannot drift apart. Rename a value here and the whole
+   surface follows.
+     forest-950 #001f16  page base        forest-700 #006b3d  hover / lift
+     forest-900 #003b26  raised surface   forest-500 #008a48  active accent
+     aged-gold  #b68a3a  the site's --stage-accent
+     label-red  #c62d2d  the seal in the mark
+     paper-50   #f8f5ed  store surface
+   ================================================= */
+:root{
+  --tsg-forest-950:#001f16; --tsg-forest-900:#003b26; --tsg-forest-700:#006b3d;
+  --tsg-forest-500:#008a48; --tsg-gold:#b68a3a;  --tsg-gold-soft:#f4dfb0;
+  --tsg-red:#c62d2d;         --tsg-paper:#f8f5ed; --tsg-aluminium:#c5cac7;
+}
+html,body{height:100%;overflow:hidden;background:var(--tsg-forest-950)}
+body{font-family:Poppins,Inter,system-ui,sans-serif;color:#fff;-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}                      /* button labels must never underline */
+img{max-width:100%}
+button{font:inherit;color:inherit}
+
+/* ============ 1. GLOBAL SHELL — a fixed canvas that is scaled ============ */
+.stage{position:fixed;inset:0;overflow:hidden;background:var(--tsg-forest-950)}
+.canvas{position:absolute;left:50%;top:0;width:1172px;height:657px;
+  transform:translateX(-50%) scale(var(--k,1)) translateY(var(--peek,0px));
+  transform-origin:50% 0}
+/* the drawer transition lives on a class that only exists while the drawer is
+   actually moving, so a window resize never animates the scale */
+.canvas.anim{transition:transform .58s cubic-bezier(.22,.61,.36,1)}
+.canvas>*{position:absolute}
+/* layout shell, no box of its own — inset:0 makes it a full-canvas hit area,
+   so it must not swallow clicks meant for the browser mock beneath it */
+.stack{position:absolute;inset:0;z-index:300;pointer-events:none}
+.stack>*{pointer-events:auto}
+.stack>*{position:absolute}
+.navmenu{display:contents}                      /* invisible shell on desktop */
+.burger{display:none}                           /* desktop */
+
+/* The stage wash now comes from the brand tokens rather than a generic blue:
+   a deep forest lift off the foot of the canvas, a warmer gold kiss at the very
+   bottom edge to pick up the aged-gold ring on the mark, and the same vertical
+   rhythm the original gradient used. */
+.bg{position:absolute;inset:0;
+  background:
+   radial-gradient(120% 62% at 50% 118%, rgba(0,107,61,.30) 0%, rgba(0,107,61,0) 62%),
+   linear-gradient(180deg,
+     rgba(0,31,22,0) 34%,
+     rgba(0,59,38,.20) 56%,
+     rgba(0,107,61,.16) 74%,
+     rgba(182,138,58,.075) 92%,
+     rgba(182,138,58,.11) 100%),
+   var(--tsg-forest-950)}
+
+/* two 1x1px dots whose entire star field is one giant box-shadow list (JS) */
+.stars{position:absolute;left:0;top:0;width:1px;height:1px;
+  border-radius:50%;background:#fff}
+
+/* ============ 2. PIXEL CONTRACT A — THE BADGE ============ */
+.badge{left:488px;top:95px;width:198px;height:39px;border-radius:12px;z-index:300;
+  border:1px solid rgba(255,255,255,.115);
+  /* faint bank of light along the foot — aged gold into forest, per the brand */
+  background:linear-gradient(to top,
+    rgba(244,223,176,.15) 0px, rgba(214,178,106,.105) 2px, rgba(0,140,90,.075) 4px,
+    rgba(0,107,61,.028) 6px, rgba(255,255,255,.012) 9px, rgba(255,255,255,.012) 100%);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+/* The seal tile is gone, so the line IS the badge: the pill is 198x39 (still
+   centred on x=587) and the type is fitted to a 12px cap inside it. The label
+   spans the full pill and centres itself, which lets the fitter scale about the
+   pill's own centre and keep the wordmark optically centred in every locale. */
+.badge b{position:absolute;left:0;right:0;top:0;height:39px;
+  display:flex;align-items:center;justify-content:center;
+  transform-origin:50% 50%;
+  font-size:15px;font-weight:400;color:rgba(255,255,255,.94);white-space:nowrap;
+  padding-top:1.5px}
+
+/* ============ 3. PIXEL CONTRACT B — THE GLOW BUTTON (used twice) ============
+   The cyan bank at the foot is a BACKGROUND GRADIENT clipped by the button's own
+   rounded rect via overflow:hidden. It is not a glow, not a shadow, not a bar. */
+.btn{display:grid;place-items:center;color:#fff;position:relative;overflow:hidden;
+  /* Same row-by-row light bank as the original contract, re-sampled onto the
+     brand ramp: aged gold at the foot, through forest green, dying into the
+     near-black body of the button. */
+  background:linear-gradient(to top,
+    #f4dfb0 1px, #e8ca82 2px, #d9b25c 3px, #c79a45 4px, #a8823a 5px,
+    #6f9a4e 6px, #2f8f5c 7px, #0d7a4c 8px, #0a6b3d 9px, #075c34 10px,
+    #064e2c 12px, #04401f 13px, #03341a 14px, #032b15 16px,
+    #02220f 18px, #021b0c 20px, #02150a 24px, #011008 30px,
+    #010c07 34px, #010c07 100%);
+  box-shadow:
+    inset 0 3px 3px -2px rgba(244,223,176,.10),
+    inset 1px 0 0 rgba(255,255,255,.09),
+    inset -1px 0 0 rgba(255,255,255,.09),
+    var(--hair,0 1px 0 rgba(214,178,106,.42)),
+    1px 0 0 rgba(214,178,106,.18), -1px 0 0 rgba(214,178,106,.18),
+    0 0 8px rgba(0,140,90,.12),
+    0 2px 5px -3px rgba(0,150,100,.45);
+  transition:transform .25s,box-shadow .25s,filter .25s}
+/* thin bright streak across the TOP edge only */
+.btn::before{content:"";position:absolute;left:22%;right:38%;top:0.8px;height:1.9px;z-index:1;
+  filter:blur(.55px);
+  background:linear-gradient(90deg,rgba(244,223,176,0) 0%,rgba(244,223,176,.55) 34%,
+    rgba(255,240,199,.74) 50%,rgba(244,223,176,.55) 66%,rgba(244,223,176,0) 100%)}
+/* side edge-light, 13px inward falloff, MASKED so it attenuates up the button */
+.btn::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;
+  background:linear-gradient(90deg,rgba(244,223,176,.70),rgba(244,223,176,0) 13px),
+             linear-gradient(270deg,rgba(244,223,176,.70),rgba(244,223,176,0) 13px);
+  -webkit-mask:linear-gradient(to top,#000 0,#000 6px,rgba(0,0,0,.40) 12px,
+    rgba(0,0,0,.15) 18px,rgba(0,0,0,.09) 24px,rgba(0,0,0,.02) 30px,rgba(0,0,0,.02) 100%);
+          mask:linear-gradient(to top,#000 0,#000 6px,rgba(0,0,0,.40) 12px,
+    rgba(0,0,0,.15) 18px,rgba(0,0,0,.09) 24px,rgba(0,0,0,.02) 30px,rgba(0,0,0,.02) 100%)}
+.btn span{position:relative;z-index:2;display:block;line-height:1;
+  text-shadow:0 1px 2px rgba(0,18,12,.5)}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.12);
+  box-shadow:inset 0 1px 0 rgba(244,223,176,.6),inset 1px 0 0 rgba(214,178,106,.35),
+             inset -1px 0 0 rgba(214,178,106,.35),0 6px 22px rgba(0,150,100,.5)}
+
+/* instance A — nav CTA */
+.nav .btn{position:absolute;left:530.7px;top:10.5px;width:125.5px;height:39.5px;
+  border-radius:14px;font-size:14px;font-weight:500;letter-spacing:-.005em}
+.nav .btn span{margin-top:0}
+/* instance B — hero CTA */
+.cta2{position:absolute;left:526px;top:349px;width:121px;height:54.5px;
+  --hair:0 0 0 transparent;border-radius:13px;font-size:17px;font-weight:500;
+  letter-spacing:-.01em;z-index:300}
+.cta2::before{display:none}    /* the hero button has no top streak; the nav one does */
+.cta2 span{margin-top:0}
+
+/* ============ 4. NAV PILL ============ */
+.nav{left:247px;top:3px;width:678px;height:64px;border-radius:32px;z-index:400;
+  background:rgba(255,255,255,.008);
+  border:1px solid rgba(255,255,255,.105);
+  -webkit-backdrop-filter:blur(16px) saturate(140%);
+  backdrop-filter:blur(16px) saturate(140%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+
+/* The official lockup sits where the drawn mark used to. 124x63 source, held at
+   30px tall so the wordmark stays legible without crowding the links. */
+.brandlock{position:absolute;left:20px;top:0;height:100%;
+  display:flex;align-items:center;text-decoration:none;
+  transition:transform .3s cubic-bezier(.2,.9,.3,1),filter .3s}
+.brandlock .mark{height:30px;width:auto;display:block;
+  filter:drop-shadow(0 1px 5px rgba(0,0,0,.55)) drop-shadow(0 0 12px rgba(198,45,45,.32))}
+.brandlock:hover{transform:scale(1.05)}
+.brandlock:active{transform:scale(.99)}
+.brandlock:focus-visible{outline:2px solid rgba(214,178,106,.85);outline-offset:4px;border-radius:6px}
+
+.links{position:absolute;left:112px;top:0;height:62px;transform-origin:0 50%;
+  display:flex;align-items:center;gap:24px}
+.links a{position:relative;font-size:12.5px;font-weight:400;color:rgba(255,255,255,.92);
+  white-space:nowrap;padding:4px 0;transition:color .25s}
+/* a rule that wipes in from the left, plus a brief lift — enough to read as
+   "this one is live" without the whole nav shifting */
+.links a::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1.5px;
+  background:linear-gradient(90deg,#d6b26a,#b68a3a);
+  transform:scaleX(0);transform-origin:0 50%;
+  transition:transform .32s cubic-bezier(.2,.9,.3,1)}
+.links a:hover,.links a:focus-visible{color:#fff}
+.links a:hover::after,.links a:focus-visible::after,.links a[aria-current]::after{transform:scaleX(1)}
+.links a:focus-visible{outline:none}
+
+/* ============ 5. HERO TYPE ============ */
+.h1{left:586px;transform:translateX(-50%);white-space:nowrap;line-height:1;
+  font-family:Poppins;font-weight:900;font-size:54px;letter-spacing:-.004em;
+  word-spacing:.175em;text-transform:uppercase;color:#fff;
+  text-shadow:0 0 34px rgba(214,178,106,.20);z-index:300}
+.sub{left:586px;transform:translateX(-50%);white-space:nowrap;line-height:1;
+  font-size:13.2px;color:#b0bcb4;z-index:300}
+.sub b{font-weight:600;color:#fff}
+.nb{white-space:nowrap}
+
+/* ============ 6. THE CAROUSEL — a true 3D perspective ring ============ */
+/* height:0 is a deliberate design-canvas convention — the shell is only a
+   positioning context, and its children (ring, mock) are placed in canvas px */
+.showcase{position:absolute;left:0;top:0;width:1172px;height:0}
+.ring{position:absolute;left:0;top:0;width:1172px;height:657px;z-index:5;
+  perspective:891px;perspective-origin:586px 918px;transform-style:preserve-3d;
+  pointer-events:none}
+.card{position:absolute;left:586px;top:616px;width:130px;height:300px;
+  margin:-150px 0 0 -65px;border-radius:12px;overflow:hidden;background:#0d1117;
+  box-shadow:0 24px 46px rgba(0,0,0,.6),0 3px 8px rgba(0,0,0,.5);
+  backface-visibility:hidden;will-change:transform}
+.card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card img.cut{object-fit:contain;padding:7px}   /* the products are cut-outs, not photos */
+.card .edge{position:absolute;inset:0;border-radius:12px;pointer-events:none;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.15),
+             inset 0 16px 30px rgba(255,255,255,.05)}
+.card.broken img{display:none}
+
+/* shared creative sub-classes */
+.cv{position:absolute;left:0;right:0;padding:0 10px}
+.fill{position:absolute;inset:0}
+.ph{position:absolute;left:0;right:0;overflow:hidden;background:none}
+/* the dark wash is ONLY a broken-image placeholder — a loaded product cut-out
+   must let the creative's own `fill` show through behind it */
+.card.broken .ph{background:linear-gradient(155deg,#2b3b50,#131c28 60%,#1d1526)}
+.phf{top:0;bottom:0}
+.ph.nobg{background:none}          /* a pure overlay (the checkout glyphs) */
+.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:7px}
+.dot{display:inline-block;width:4.5px;height:4.5px;background:#e5202f;
+  margin-right:4px;transform:rotate(45deg) translateY(-1px)}
+.dot.sq{transform:none;width:6.5px;height:4.5px;border-radius:1px}
+.t-big{font-family:Poppins;font-weight:900;text-transform:uppercase;line-height:.96;
+  letter-spacing:-.015em;white-space:nowrap;transform:scaleX(.875);
+  transform-origin:left center}
+.t-serif{font-family:"Playfair Display",serif;line-height:1.02;letter-spacing:.01em;
+  white-space:nowrap}
+
+/* ============ 9. THE BROWSER MOCK (in FRONT of the ring, bleeding off) ============ */
+.browser{position:absolute;left:165px;top:558px;width:842px;
+  height:calc(99px + var(--fill,0px));
+  border-radius:28px 28px 0 0;overflow:hidden;z-index:100;
+  box-shadow:0 -14px 44px rgba(0,0,0,.55)}
+.browser::before{content:"";position:absolute;left:0;right:0;top:42px;bottom:0;
+  background:rgba(0,28,20,.86);z-index:0}
+
+.bar{position:absolute;left:0;top:0;width:100%;height:42px;
+  background:linear-gradient(180deg,rgba(0,43,30,.55),rgba(0,28,20,.64));
+  -webkit-backdrop-filter:blur(6px) saturate(112%);backdrop-filter:blur(6px) saturate(112%)}
+.dots{position:absolute;left:27px;top:16px;display:flex;gap:2.6px}
+.dots i{width:7.6px;height:7.6px;border-radius:50%}
+.omni{position:absolute;left:246px;top:7px;width:336px;height:26px;border-radius:5px;
+  background:rgba(0,24,17,.94);box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);
+  display:flex;align-items:center;justify-content:center;gap:6px}
+.omni svg{width:9px;height:9px;opacity:.72}
+.omni span{font-size:11px;color:rgba(255,255,255,.72);letter-spacing:.005em}
+.tools{position:absolute;right:27px;top:14px;display:flex;align-items:center;gap:4px;
+  opacity:.9}
+.tools svg{width:11px;height:12px}
+
+.page{position:absolute;left:7px;right:6px;top:42px;bottom:0;background:#fff;
+  color:#111;overflow:hidden;border-radius:10px 10px 0 0}
+.ann{position:absolute;left:0;top:0;width:100%;height:16px;background:#00241a;
+  display:grid;place-items:center;border-radius:10px 10px 0 0}
+.ann span{font-size:7.2px;letter-spacing:.05em;color:#cfcfcf}
+.ann u{position:absolute;font-size:8px;color:#9a9a9a;text-decoration:none}
+.shoplogo{position:absolute;left:50%;transform:translateX(-50%);top:24px;text-align:center}
+.shoplogo em{font-family:"Playfair Display",serif;font-style:normal;font-weight:600;
+  font-size:19px;letter-spacing:.12em;line-height:1;display:block}
+.shoplogo i{font-style:normal;font-size:6.6px;letter-spacing:.24em;color:#3a3a3a;
+  margin-top:3px;display:block}
+.shopicons{position:absolute;right:100px;top:33px;display:flex;gap:5px;opacity:.85}
+.shopicons svg{width:7px;height:7px}
+
+.pagebody{position:absolute;left:0;right:0;top:62px;bottom:0;background:#fff;overflow:hidden}
+.pghero{position:relative;margin:0 26px;aspect-ratio:3/1;border-radius:7px;overflow:hidden;
+  background:linear-gradient(120deg,#e8dcd4,#cbb6a8)}
+.pghero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pghero .scrim{position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(28,20,16,.62) 0%,rgba(28,20,16,.30) 46%,rgba(28,20,16,0) 72%)}
+.pghero .copy{position:absolute;left:22px;top:50%;transform:translateY(-50%);color:#fff}
+.pghero .copy u{font-size:7px;letter-spacing:.2em;text-transform:uppercase;
+  opacity:.9;display:block;text-decoration:none}
+.pghero .copy em{font-family:"Playfair Display",serif;font-style:normal;font-weight:600;
+  font-size:20px;line-height:1.14;margin-top:7px;display:block}
+.pghero .copy i{font-style:normal;display:inline-block;margin-top:12px;padding:7px 16px;
+  border-radius:20px;background:#fff;color:#17181c;font-size:7.4px;font-weight:600;
+  letter-spacing:.06em}
+.pgsec{display:flex;align-items:baseline;justify-content:space-between;margin:16px 26px 9px}
+.pgsec b{font-family:"Playfair Display",serif;font-weight:600;font-size:13px;color:#17181c}
+.pgsec u{font-size:7px;letter-spacing:.1em;color:#8a8a8a;text-transform:uppercase;
+  text-decoration:none}
+.pggrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0 26px}
+.pgcard .ph{position:relative;aspect-ratio:.62;border-radius:6px;
+  overflow:hidden;background:linear-gradient(150deg,#efe7e1,#ddcfc6)}
+.pgcard .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:9%}
+.pgcard .tag{position:absolute;left:7px;top:7px;padding:3px 7px;border-radius:4px;
+  background:#17181c;color:#fff;font-size:7px;font-weight:600;letter-spacing:.07em}
+.pgcard b{display:block;margin-top:10px;font-size:9.8px;font-weight:600;color:#17181c;
+  letter-spacing:.01em}
+.pgcard i{display:block;font-style:normal;margin-top:4px;font-size:8.6px;color:#8a8a8a}
+/* No price is published, and no contact line either: the tile itself is the
+   control, and the enquiry CTA lives on the detail page it opens. */
+.pgstrip{display:flex;justify-content:space-between;margin:16px 26px 0;padding:9px 0;
+  border-top:1px solid #eee6e0;border-bottom:1px solid #eee6e0}
+.pgstrip span{font-size:6.4px;letter-spacing:.08em;color:#7d7169;text-transform:uppercase}
+
+/* ---- catalogue tile: a real button, so it is focusable and keyboard-usable ---- */
+button.pgcard{display:block;width:100%;padding:0;border:0;background:none;
+  font:inherit;color:inherit;text-align:left;cursor:pointer;
+  -webkit-tap-highlight-color:transparent}
+button.pgcard .ph{display:block}
+button.pgcard .ph img{transition:transform .35s cubic-bezier(.22,.61,.36,1)}
+button.pgcard:hover .ph img{transform:scale(1.05)}
+button.pgcard:hover b{color:#006b3d}
+button.pgcard:focus-visible{outline:2px solid rgba(0,107,61,.7);outline-offset:3px;border-radius:6px}
+.pgcard b{transition:color .2s}
+/* With the contact line gone the tile carries no written cue, so the affordance
+   moves into the image: a chevron that appears only while the tile is live. */
+.pgcard .go{position:absolute;right:7px;bottom:7px;width:19px;height:19px;
+  display:grid;place-items:center;border-radius:50%;
+  background:rgba(0,107,61,.94);color:#fff;
+  opacity:0;transform:scale(.6) translateY(3px);
+  transition:opacity .24s ease,transform .28s cubic-bezier(.22,.61,.36,1)}
+.pgcard .go::before{content:"";width:6px;height:6px;
+  border-top:1.4px solid currentColor;border-right:1.4px solid currentColor;
+  transform:rotate(45deg) translate(-1px,1px)}
+button.pgcard:hover .go,button.pgcard:focus-visible .go{opacity:1;transform:scale(1) translateY(0)}
+
+/* ---- product detail, swapped over the catalogue ---- */
+.pgdetail{display:none}
+.pagebody.detail .pgfront{display:none}
+.pagebody.detail .pgdetail{display:block}
+/* The way out has to be the first thing on the page, not a quiet link the
+   visitor has to hunt for — it is a solid brand chip, full contrast. */
+/* The pull-quote is the sentence a visitor should carry away; the gold rule
+   and the serif italic lift it out of the body copy without shouting. */
+.pdlegacy{margin:14px 0 0;padding:2px 0 2px 14px;border-left:3px solid #b68a3a;
+  font-family:"Playfair Display",serif;font-style:italic;font-size:13.4px;line-height:1.5;
+  color:#8a6a2c}
+/* Recognition is a quiet footnote, not a badge: gold dot, small caps-ish weight. */
+.pdaward{margin:16px 0 0;font-size:10.6px;line-height:1.5;color:#8a7a5a;
+  display:flex;align-items:flex-start;gap:7px}
+.pdaward i{flex:0 0 auto;width:6px;height:6px;margin-top:5px;border-radius:50%;
+  background:#b68a3a;box-shadow:0 0 0 3px rgba(182,138,58,.16)}
+.pdback{position:sticky;top:0;z-index:3;display:inline-flex;align-items:center;gap:7px;
+  margin:0 0 16px;padding:9px 16px 9px 12px;
+  border:0;border-radius:22px;background:#006b3d;color:#fff;cursor:pointer;
+  font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  box-shadow:0 3px 10px -3px rgba(0,31,22,.5);
+  transition:background .2s,transform .2s}
+.pdback svg{width:13px;height:13px;stroke-width:2.6}
+.pdback:hover{background:#008a48;transform:translateX(-2px)}
+.pdback:focus-visible{outline:2px solid rgba(0,107,61,.7);outline-offset:3px}
+.pdwrap{display:grid;grid-template-columns:minmax(0,33%) minmax(0,1fr);gap:30px;margin:0 26px 24px}
+.pdmedia{min-width:0;display:flex;flex-direction:column;align-items:center}
+.pdstage{position:relative;width:100%;aspect-ratio:3/4;
+  border-radius:8px;overflow:hidden;
+  background:linear-gradient(150deg,#efe7e1,#ddcfc6)}
+.pdstage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:6%}
+.pdstage .tag{position:absolute;left:10px;top:10px;padding:4px 8px;border-radius:4px;
+  background:#17181c;color:#fff;font-size:6.4px;font-weight:600;letter-spacing:.1em}
+.pdthumbs{display:flex;gap:8px;margin-top:10px;align-self:stretch;justify-content:center}
+.pdthumb{width:50px;height:68px;padding:0;border:1px solid #e6dcd5;border-radius:5px;
+  background:#f6f1ec;cursor:pointer;overflow:hidden;transition:border-color .2s}
+.pdthumb img{width:100%;height:100%;object-fit:contain;padding:3px}
+.pdthumb.on{border-color:#006b3d}
+.pdthumb:focus-visible{outline:2px solid rgba(15,122,90,.55);outline-offset:2px}
+.pdinfo{min-width:0}
+.pdline{display:block;font-style:normal;font-size:9.6px;letter-spacing:.13em;
+  text-transform:uppercase;color:#006b3d}
+.pdname{font-family:"Playfair Display",serif;font-weight:600;font-size:30px;line-height:1.13;
+  margin-top:10px;color:#17181c}
+.pdtagline{margin-top:11px;font-size:12.4px;line-height:1.55;color:#6b5f57;font-style:italic}
+.pdspecs{margin-top:16px;border-top:1px solid #eee6e0}
+.pdspecs .row{display:grid;grid-template-columns:134px minmax(0,1fr);gap:12px;
+  padding:9px 0;border-bottom:1px solid #f2ebe5}
+.pdspecs .row b{font-size:9.4px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:#a08f86}
+.pdspecs .row span{font-size:11.6px;line-height:1.5;color:#3a3330}
+.pddesc{margin-top:14px;font-size:12px;line-height:1.72;color:#4a423e}
+.pddesc+.pddesc{margin-top:11px}
+.pdblock{margin-top:17px}
+.pdblock>b{display:block;font-size:9.4px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:#17181c}
+.pdblock ul{margin:10px 0 0;padding-left:17px}
+.pdblock li{font-size:11.6px;line-height:1.62;color:#4a423e;margin-bottom:7px}
+.pdblock ul.chips{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.pdblock ul.chips li{margin:0;padding:8px 15px;border-radius:20px;background:#f3ece6;
+  font-size:10.8px;color:#5c514a}
+.pdcta{margin-top:24px;width:auto;min-width:220px;height:48px;padding:0 28px;border-radius:13px;
+  font-size:13px;font-weight:600;letter-spacing:.02em;display:inline-grid}
+
+/* ================= STOREFRONT DRAWER =================
+   The mock is authored to bleed off the bottom edge, which is right for the
+   hero but leaves the store front unreachable — nothing on the page scrolls.
+   So the mock becomes a pull-up drawer: it is translated up to the top of the
+   stage and given the viewport's full height. The hero above it is untouched,
+   so the authored composition is still exactly as designed until you pull. */
+.browser{transition:none}
+.browser.anim{transition:height .58s cubic-bezier(.22,.61,.36,1)}
+.peekhint{position:absolute;left:50%;bottom:20px;z-index:320;
+  display:inline-flex;align-items:center;gap:9px;height:38px;padding:0 17px;
+  transform:translateX(-50%);border-radius:20px;cursor:pointer;
+  background:rgba(0,26,19,.68);border:1px solid rgba(255,255,255,.13);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  backdrop-filter:blur(14px) saturate(140%);
+  box-shadow:0 10px 30px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06);
+  color:rgba(255,255,255,.88);font-size:12.5px;font-weight:500;letter-spacing:.01em;
+  white-space:nowrap;transition:opacity .3s,transform .3s,background .2s,color .2s;
+  -webkit-tap-highlight-color:transparent}
+.peekhint:hover{background:rgba(16,26,42,.8);color:#fff}
+.peekhint:focus-visible{outline:2px solid rgba(182,138,58,.9);outline-offset:3px}
+.peekhint svg{width:13px;height:13px;flex:0 0 auto;transition:transform .35s}
+.peekhint .up{transform:rotate(180deg)}
+/* once open, the affordance retreats to a small chevron so it never sits on
+   top of the product grid it just revealed */
+.stage.peek .peekhint{bottom:auto;top:16px;height:34px;padding:0 13px;
+  font-size:0;gap:0;background:rgba(0,26,19,.58)}
+.stage.peek .peekhint .lbl{display:none}
+.stage.peek .peekhint svg{width:15px;height:15px}
+.stage.peek .peekhint:hover{font-size:12.5px;padding:0 15px}
+.stage.peek .peekhint:hover .lbl{display:inline}
+/* Only once the drawer is open: on a short phone the full grid is taller than
+   the revealed panel, so the store CONTENT scrolls inside it. It has to be
+   .pagebody — that is the box that actually clips the grid. The authored
+   closed state keeps overflow:hidden exactly as specified. */
+.stage.peek .pagebody{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
+.stage.peek .pagebody::-webkit-scrollbar{width:0;height:0}
+/* On a phone the showcase clips the cylinder (the ring is far wider than the
+   screen). Once the drawer is open the mock has to be free to grow past that
+   clip, so the shell stands down — the ring is off-screen by then anyway. */
+.stage.peek .showcase{overflow:visible;height:0;min-height:0;flex:0 0 auto}
+@media (prefers-reduced-motion:reduce){
+  .canvas.anim,.browser.anim,.peekhint,.peekhint svg{transition:none}
+}
+
+/* ================= EDITORIAL SHEET =================
+   Same overlay contract as the lead form, so Escape, the focus trap and the
+   focus return all behave identically whichever dialog is on top. */
+.sheet{position:fixed;inset:0;z-index:420;display:grid;place-items:center;padding:24px;
+  background:rgba(3,10,7,.74);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  animation:leadIn .3s ease both}
+.sheet[hidden]{display:none}
+.sheetpanel{position:relative;width:100%;max-width:600px;max-height:calc(100vh - 48px);
+  overflow-y:auto;overscroll-behavior:contain;
+  padding:32px 34px 30px;border-radius:22px;
+  background:linear-gradient(180deg,#04241a,#001a13);
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 40px 90px rgba(0,0,0,.66),inset 0 1px 0 rgba(255,255,255,.05);
+  animation:leadPanel .42s cubic-bezier(.16,1,.3,1) both}
+.sheetclose{position:absolute;right:16px;top:16px;width:32px;height:32px;padding:0;
+  border:1px solid rgba(255,255,255,.14);border-radius:50%;
+  background:rgba(255,255,255,.04);color:rgba(255,255,255,.8);cursor:pointer;
+  display:grid;place-items:center;transition:background .2s,color .2s,transform .2s}
+.sheetclose svg{width:15px;height:15px}
+.sheetclose:hover{background:rgba(255,255,255,.12);color:#fff;transform:rotate(90deg)}
+.sheetclose:focus-visible{outline:2px solid rgba(214,178,106,.85);outline-offset:3px}
+
+.sheetkicker{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+  color:#d6b26a;margin:0 0 8px}
+.sheettitle{font-family:"Playfair Display",serif;font-weight:600;font-size:27px;
+  line-height:1.2;margin:0;color:#fff;padding-right:38px}
+.sheetsub{margin:11px 0 0;font-size:14px;line-height:1.65;color:#9fb3a8}
+
+/* three headline numbers, because "over a hundred years" lands harder as digits */
+.sheetstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:22px 0 0}
+.sheetstats div{padding:14px 12px;border-radius:14px;text-align:center;
+  background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07)}
+.sheetstats b{display:block;font-family:"Playfair Display",serif;font-size:24px;
+  line-height:1;color:#d6b26a}
+.sheetstats span{display:block;margin-top:7px;font-size:10.5px;line-height:1.4;
+  color:#93a89c}
+
+/* the timeline rule runs behind the stops, so the century reads at a glance */
+.sheetlist{list-style:none;margin:26px 0 0;padding:0 0 0 20px;position:relative}
+.sheetlist::before{content:"";position:absolute;left:4px;top:7px;bottom:7px;width:1px;
+  background:linear-gradient(180deg,#b68a3a,rgba(182,138,58,.12))}
+.sheetlist li{position:relative;margin-bottom:20px}
+.sheetlist li:last-child{margin-bottom:0}
+.sheetlist li::before{content:"";position:absolute;left:-20px;top:5px;width:9px;height:9px;
+  border-radius:50%;background:#001a13;border:2px solid #d6b26a;
+  box-shadow:0 0 0 3px rgba(214,178,106,.14)}
+.sheetlist b{display:block;font-size:11px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:#d6b26a}
+.sheetlist p{margin:6px 0 0;font-size:13.5px;line-height:1.66;color:#b9c9c0}
+
+/* the how-to reuses the same rail, but numbers the stops instead of dating them */
+.sheetsteps{list-style:none;counter-reset:step;margin:24px 0 0;padding:0;position:relative}
+.sheetsteps li{counter-increment:step;position:relative;margin-bottom:20px;
+  padding:0 0 0 46px}
+.sheetsteps li:last-child{margin-bottom:0}
+.sheetsteps li::before{content:counter(step);position:absolute;left:0;top:0;
+  width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+  font-size:13px;font-weight:700;color:#001a13;
+  background:linear-gradient(140deg,#e6c887,#b68a3a);
+  box-shadow:0 0 0 4px rgba(214,178,106,.13)}
+.sheetsteps b{display:block;font-size:15px;font-weight:600;color:#fff;line-height:1.3}
+.sheetsteps p{margin:6px 0 0;font-size:13.5px;line-height:1.66;color:#b9c9c0}
+
+.sheetnote{margin:24px 0 0;padding:14px 16px;border-radius:14px;
+  background:rgba(214,178,106,.08);border:1px solid rgba(214,178,106,.2);
+  font-size:12.5px;line-height:1.6;color:#d8c79c}
+.sheetfoot{margin:24px 0 0;display:flex;gap:10px;flex-wrap:wrap}
+.sheetfoot .btn{height:44px;padding:0 24px;border-radius:12px;font-size:14px}
+.sheetfoot .sheetghost{background:transparent;color:#cfe0d6;
+  border:1px solid rgba(255,255,255,.18)}
+.sheetfoot .sheetghost:hover{background:rgba(255,255,255,.08);color:#fff}
+
+/* ================= SUPPORT TOAST =================
+   Drops from the top edge rather than opening a dialog: the answer is two taps
+   away and should not cost the visitor the page they were on. */
+.toast{position:fixed;left:50%;top:16px;z-index:440;width:max-content;max-width:min(420px,92vw);
+  translate:-50% 0;pointer-events:none}
+.toast[hidden]{display:none}
+.toastcard{display:flex;gap:14px;align-items:flex-start;padding:15px 18px 15px 15px;
+  border-radius:16px;
+  background:linear-gradient(150deg,#06301f,#022017);
+  border:1px solid rgba(214,178,106,.34);
+  box-shadow:0 22px 54px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06);
+  pointer-events:auto;
+  animation:toastIn .46s cubic-bezier(.16,1,.3,1) both}
+.toast.out .toastcard{animation:toastOut .3s ease forwards}
+@keyframes toastIn{from{opacity:0;translate:0 -22px;scale:.96}to{opacity:1;translate:0 0;scale:1}}
+@keyframes toastOut{to{opacity:0;translate:0 -14px;scale:.97}}
+.toasticon{flex:0 0 auto;width:36px;height:36px;border-radius:11px;display:grid;place-items:center;
+  color:#001a13;background:linear-gradient(140deg,#e6c887,#b68a3a);
+  box-shadow:0 0 0 4px rgba(214,178,106,.14)}
+.toasticon svg{width:19px;height:19px}
+.toasttext{min-width:0}
+.toasttext>b{display:block;font-size:9.5px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:#d6b26a}
+.toastrow{display:flex;align-items:baseline;gap:8px;margin-top:7px;
+  text-decoration:none;border-radius:6px}
+.toastrow em{font-style:normal;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  color:#8fa79a;flex:0 0 auto;min-width:52px}
+.toastrow span{font-size:14.5px;font-weight:600;color:#fff;word-break:break-all;
+  transition:color .2s}
+.toastrow:hover span{color:#e6c887}
+.toastrow:focus-visible{outline:2px solid rgba(214,178,106,.85);outline-offset:3px}
+.toasthours{margin:9px 0 0;font-size:10.5px;line-height:1.4;color:#8fa79a}
+/* the bar is the auto-dismiss timer, made visible so nothing vanishes unexplained */
+.toastbar{display:block;height:2px;margin:0 4px;border-radius:2px;
+  background:linear-gradient(90deg,#d6b26a,#b68a3a);
+  transform-origin:0 50%;animation:toastBar 7s linear forwards;pointer-events:none}
+.toast.out .toastbar{animation:none;opacity:0}
+@keyframes toastBar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+
+/* ================= LEAD / ENQUIRY FORM =================
+   Stage-level overlay, so it never disturbs the authored hero geometry. */
+.lead{position:fixed;inset:0;z-index:400;display:grid;place-items:center;padding:24px;
+  background:rgba(3,6,12,.72);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  animation:leadIn .3s ease both}
+.lead[hidden]{display:none}
+@keyframes leadIn{from{opacity:0}to{opacity:1}}
+.leadpanel{position:relative;width:100%;max-width:560px;max-height:calc(100vh - 48px);
+  overflow-y:auto;overscroll-behavior:contain;
+  padding:30px 32px 26px;border-radius:22px;
+  background:linear-gradient(180deg,#04241a,#001a13);
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 40px 90px rgba(0,0,0,.66),inset 0 1px 0 rgba(255,255,255,.05);
+  animation:leadPanel .42s cubic-bezier(.16,1,.3,1) both}
+@keyframes leadPanel{from{opacity:0;translate:0 16px;scale:.985}to{opacity:1;translate:0 0;scale:1}}
+.leadclose{position:absolute;right:16px;top:16px;width:32px;height:32px;padding:0;
+  border:0;border-radius:10px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);
+  cursor:pointer;display:grid;place-items:center;transition:background .2s,color .2s}
+.leadclose svg{width:14px;height:14px}
+.leadclose:hover{background:rgba(255,255,255,.12);color:#fff}
+.leadclose:focus-visible{outline:2px solid rgba(182,138,58,.9);outline-offset:2px}
+.leadkicker{font-size:10.5px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--tsg-gold)}
+.leadtitle{font-family:"Playfair Display",serif;font-weight:600;font-size:27px;
+  line-height:1.15;margin-top:8px;color:#fff}
+.ledesub{margin-top:8px;font-size:13px;line-height:1.6;color:#9aa6b4;max-width:42ch}
+.leadintro{padding-right:34px;margin-bottom:22px}
+.leadgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.leadfield{display:flex;flex-direction:column;gap:6px;min-width:0}
+.leadfield.wide{grid-column:1/-1}
+.leadfield>span{font-size:11px;font-weight:600;letter-spacing:.06em;color:#c3ccd6}
+.leadfield em{font-style:normal;color:var(--tsg-gold);margin-left:3px}
+.leadfield input,.leadfield select,.leadfield textarea{
+  font:inherit;font-size:13.5px;color:#fff;padding:11px 13px;border-radius:11px;
+  border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.045);
+  transition:border-color .2s,background .2s;width:100%}
+.leadfield textarea{resize:vertical;min-height:78px;line-height:1.55}
+.leadfield select{appearance:none;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,#7c8794 50%),
+                   linear-gradient(135deg,#7c8794 50%,transparent 50%);
+  background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:34px}
+.leadfield select option{background:#04241a;color:#fff}
+.leadfield input::placeholder,.leadfield textarea::placeholder{color:#5c6672}
+.leadfield input:focus,.leadfield select:focus,.leadfield textarea:focus{
+  outline:0;border-color:rgba(182,138,58,.8);background:rgba(182,138,58,.08)}
+.leadfield input[aria-invalid="true"],.leadfield select[aria-invalid="true"]{
+  border-color:#ff6b6b;background:rgba(255,107,107,.07)}
+.leadcheck{display:flex;align-items:flex-start;gap:9px;margin-top:16px;
+  font-size:12px;line-height:1.5;color:#9aa6b4;cursor:pointer}
+.leadcheck input{width:15px;height:15px;margin:1px 0 0;accent-color:#006b3d;flex:0 0 auto;
+  cursor:pointer}
+.leadcheck input[aria-invalid="true"]{outline:2px solid #ff6b6b;outline-offset:2px}
+.leaderr{margin-top:12px;font-size:12.5px;line-height:1.5;color:#ff8080;min-height:0}
+.leaderr:empty{display:none}
+.leadactions{margin-top:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.leadcta{width:auto;min-width:196px;height:46px;padding:0 26px;border-radius:13px;
+  font-size:14px;font-weight:600;letter-spacing:.005em;cursor:pointer;
+  display:inline-grid;flex:0 0 auto}
+.leadcta[disabled]{opacity:.55;cursor:progress}
+.leadnote{font-size:11.5px;line-height:1.5;color:#6d7885;flex:1 1 180px;min-width:0}
+.leaddone{text-align:center;padding:14px 0 4px}
+.leaddone[hidden]{display:none}
+.leaddone svg{width:44px;height:44px;color:var(--tsg-gold);margin-bottom:14px}
+.leaddone h3{font-family:"Playfair Display",serif;font-weight:600;font-size:23px;color:#fff}
+.leaddone p{margin:10px auto 14px;font-size:13.5px;line-height:1.6;color:#9aa6b4;
+  max-width:40ch}
+.leadsent{font-size:12px!important;color:#7d8a83!important;word-break:break-all}
+.leaddonebtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+/* the ghost button reuses the bank at 0 strength, so the pair reads as
+   primary + secondary without introducing a second button language */
+.leadghost{background:var(--tsg-forest-900);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 2px 5px -3px rgba(0,0,0,.5)}
+.leadghost:hover{box-shadow:inset 0 0 0 1px rgba(214,178,106,.5),0 4px 14px rgba(0,0,0,.4)}
+@media (max-width:700px){
+  .lead{padding:0;place-items:stretch}
+  .leadpanel{max-width:none;max-height:100vh;height:100%;border-radius:0;
+    padding:26px 20px calc(26px + env(safe-area-inset-bottom))}
+  .leadtitle{font-size:23px}
+  .ledesub{font-size:12.5px}
+  .leadgrid{grid-template-columns:1fr;gap:13px}
+  .leadactions{flex-direction:column;align-items:stretch}
+  .leadcta{width:100%}
+  .leadnote{text-align:center}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .lead,.leadpanel{animation:none}
+}
+
+/* ================= LANGUAGE SWITCH (outside .canvas, like .wa) =================
+   Deliberately NOT inside the nav pill: the nav's 678px box and every child
+   offset are part of the pixel contract, so the switch lives in the stage's own
+   top-left corner and touches no authored coordinate. */
+.lang{position:absolute;left:16px;top:24px;z-index:300;display:flex;gap:2px;
+  padding:3px;border-radius:20px;
+  background:rgba(0,26,19,.66);border:1px solid rgba(255,255,255,.10);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  backdrop-filter:blur(14px) saturate(140%);
+  box-shadow:0 8px 24px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05)}
+.lang button{appearance:none;border:0;background:transparent;cursor:pointer;
+  min-width:34px;height:26px;padding:0 9px;border-radius:17px;
+  font-family:inherit;font-size:11.5px;font-weight:600;line-height:1;
+  letter-spacing:.02em;color:rgba(255,255,255,.62);
+  transition:color .2s,background .2s;-webkit-tap-highlight-color:transparent}
+.lang button:hover{color:#fff}
+.lang button:focus-visible{outline:2px solid rgba(182,138,58,.9);outline-offset:2px}
+.lang button[aria-pressed="true"]{color:#fff;
+  background:linear-gradient(180deg,rgba(0,107,61,.55),rgba(0,59,38,.55));
+  box-shadow:inset 0 0 0 1px rgba(182,138,58,.45),inset 0 1px 0 rgba(244,223,176,.22)}
+.lang button[data-lang="zh"]{font-size:12.5px;letter-spacing:0}
+@media (prefers-reduced-motion:reduce){.lang button{transition:none}}
+html.intro .lang{opacity:0;translate:0 -9px}
+
+/* floating WhatsApp button (outside .canvas, inside .stage) */
+.wa{position:absolute;right:16px;bottom:24px;width:56px;height:56px;border-radius:50%;
+  background:#25d366;display:grid;place-items:center;z-index:300;
+  box-shadow:0 8px 20px rgba(0,0,0,.5)}
+.wa svg{width:31px;height:31px}
+.wa::after{content:"";position:absolute;inset:0;border-radius:50%;
+  border:2px solid rgba(37,211,102,.5);animation:pulse 2.8s ease-out infinite}
+@keyframes pulse{0%{transform:scale(1);opacity:.75}70%{transform:scale(1.4);opacity:0}
+  100%{opacity:0}}
+
+/* ============ 12. ENTRANCE — resting states ============
+   Uses the INDIVIDUAL translate/scale/clip-path properties, NOT `transform`,
+   because `transform` is already owned by the pixel-fitter and the ring loop.
+   The individual properties compose instead of colliding. */
+html.intro .nav{opacity:0;translate:0 -9px}
+html.intro .mark, html.intro .wm, html.intro .links a, html.intro .nav .btn,
+html.intro .burger{opacity:0;translate:0 6px}
+html.intro .badge{opacity:0;translate:0 11px;scale:.985}
+html.intro .h1{opacity:0;translate:0 15px;clip-path:inset(100% 0 -30% 0)}
+html.intro .sub{opacity:0;translate:0 10px}
+html.intro .cta2{opacity:0;translate:0 13px;scale:.985}
+html.intro .ring{opacity:0;translate:0 18px;scale:.99}
+html.intro .browser{opacity:0;translate:0 26px}
+html.intro .wa{opacity:0;scale:.88}
+
+/* ============ 10. SHARED NARROW-VIEWPORT NAV (<=1080px) ============ */
+@media (max-width:1080px){
+  .burger{display:grid;place-content:center;gap:4px;position:absolute;right:12px;top:11px;
+    width:42px;height:42px;padding:0;border:0;border-radius:14px;background:transparent;
+    cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .burger span{display:block;width:19px;height:1.6px;border-radius:2px;
+    background:rgba(255,255,255,.92);
+    transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .18s}
+  .burger:focus-visible{outline:2px solid rgba(182,138,58,.9);outline-offset:2px}
+  .nav.open .burger span:nth-child(1){transform:translateY(5.6px) rotate(45deg)}
+  .nav.open .burger span:nth-child(2){opacity:0}
+  .nav.open .burger span:nth-child(3){transform:translateY(-5.6px) rotate(-45deg)}
+
+  .navmenu{display:block;position:absolute;left:0;right:0;top:74px;padding:12px;
+    border-radius:22px;border:1px solid rgba(255,255,255,.10);
+    background:linear-gradient(180deg,rgba(2,32,23,.985),rgba(0,25,19,.99));
+    -webkit-backdrop-filter:blur(18px) saturate(140%);backdrop-filter:blur(18px) saturate(140%);
+    box-shadow:0 26px 60px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.05);
+    opacity:0;visibility:hidden;transform:translateY(-8px);
+    transition:opacity .24s ease,transform .28s cubic-bezier(.4,0,.2,1),visibility .28s}
+  .nav.open .navmenu{opacity:1;visibility:visible;transform:none}
+
+  .links{position:static;display:flex;flex-direction:column;align-items:stretch;
+    height:auto;gap:2px;transform:none!important}
+  .links a{font-size:15px;padding:11px 14px;border-radius:12px;color:rgba(255,255,255,.9);
+    transition:background .2s,color .2s}
+  .nav .btn{position:static;width:100%;height:46px;margin-top:10px;font-size:15px}
+  .nav .btn span{margin-top:3px}
+}
+@media (hover:hover) and (max-width:1080px){
+  .burger:hover span{background:#fff}
+  .links a:hover{background:rgba(255,255,255,.055);color:#fff;opacity:1}}
+@media (prefers-reduced-motion:reduce){
+  .navmenu,.burger span{transition:none}
+  .wa::after{animation:none}
+  html.intro .nav,html.intro .mark,html.intro .wm,html.intro .links a,
+  html.intro .nav .btn,html.intro .burger,html.intro .badge,html.intro .h1,
+  html.intro .sub,html.intro .cta2,html.intro .ring,html.intro .browser,
+  html.intro .wa{opacity:1;translate:none;scale:none;clip-path:none}
+}
+
+/* ============ 10b. TABLET 701-1080px ============
+   1080 is where the desktop composition measurably stops holding: nav links fall
+   below 10.3px and on portrait tablets the mock swells to 64-69% of the viewport. */
+@media (min-width:701px) and (max-width:1080px){
+  .nav{left:286px;width:620px}          /* narrows to logo + burger */
+  .badge{left:488px;width:198px}        /* same pill, same centre as desktop */
+  .stack{transform:translateY(var(--stshift,0px))}
+  .showcase{transform:translateY(var(--sshift,0px))}
+  .ring{transform:scale(var(--rs,1));transform-origin:586px 595px}
+  .wa{width:58px;height:58px;right:22px;bottom:26px}
+  .wa svg{width:32px;height:32px}
+}
+
+/* ============ 10c. PHONE <=700px — a genuine flow column ============ */
+@media (max-width:700px){
+  .canvas{position:relative;left:auto;top:auto;width:100%;height:100%;
+    transform:translateY(var(--peek,0px));
+    display:flex;flex-direction:column;align-items:center;padding:0 20px}
+  .canvas>*{position:static}
+  .stack{display:contents}
+
+  .nav{position:relative;left:auto;top:auto;width:100%;max-width:500px;height:58px;
+    margin-top:clamp(46px,6.4vh,58px);flex:0 0 auto}
+  /* logo lockup: the whole official lockup scales with the pill */
+  .brandlock{left:14px}
+  .brandlock .mark{height:28px}
+  .burger{right:8px;top:7px;width:44px;height:44px}
+  .navmenu{top:68px;padding:12px}
+  .links a{font-size:16px;padding:12px 15px;border-radius:12px}
+  .links a::after{display:none}
+  .nav .btn{height:48px;margin-top:10px;font-size:16px}
+
+  /* the badge becomes auto-width, but the tile stays pinned left and the label
+     stays to its RIGHT via padding — it must still never overlap the tile */
+  .badge{position:relative;left:auto;top:auto;margin-top:clamp(16px,2.6vh,26px);
+    width:auto;max-width:100%;height:36px;flex:0 0 auto;border-radius:18px}
+  .badge b{position:relative;left:auto;right:auto;top:auto;height:36px;
+    padding:0 20px;font-size:14px}
+
+  /* 7.4em sits between the width of "TSINGTAO" and "TSINGTAO PREMIUM", so the
+     line break always lands balanced instead of orphaning the last word */
+  .h1{position:relative;left:auto;top:auto;transform:none;white-space:normal;
+    text-align:center;font-size:clamp(29px,8.4vw,36px);line-height:1.06;
+    letter-spacing:-.01em;max-width:7.4em}
+  .h1.l1{margin-top:clamp(12px,2.2vh,20px)}
+  .sub{position:relative;left:auto;top:auto;transform:none;white-space:normal;
+    text-align:center;font-size:clamp(14px,3.9vw,15.5px);line-height:1.5;max-width:340px}
+  .sub.s1{margin-top:clamp(10px,1.8vh,16px)}
+  .cta2{position:relative;left:auto;top:auto;margin-top:clamp(16px,2.6vh,26px);
+    flex:0 0 auto;width:auto;min-width:158px;height:52px;padding:0 26px;font-size:16px}
+
+  .showcase{position:relative;left:auto;top:auto;flex:1 1 auto;width:100%;height:auto;
+    min-height:224px}
+  /* the ring keeps its full 1172x657 3D geometry, just repositioned — and
+     .showcase clips it, since the cylinder is far wider than any phone */
+  .showcase{overflow:hidden}
+  .ring{position:absolute;left:50%;margin-left:-586px;top:-446px;bottom:auto;
+    width:1172px;height:657px;transform-origin:586px 466px;transform:scale(1.02)}
+  /* the mock is a child of .showcase, so these offsets are measured from the
+     showcase — which starts BELOW the hero — and it can never ride up over it.
+     top+bottom (not auto height) is what gives the mock a real box. */
+  .browser{position:absolute;left:50%;transform:translateX(-50%);top:212px;bottom:0;
+    width:calc(100% + 40px);height:auto;border-radius:22px 22px 0 0}
+  .browser .bar{height:36px}
+  .omni{left:50%;transform:translateX(-50%);width:58%;height:24px;top:6px}
+  .omni span{font-size:9px}
+  .dots{top:14px}
+  .tools{display:none}
+  .ann{height:15px} .ann span{font-size:6px} .page{top:36px}
+  /* the mock is nearly full-bleed, so the store front reads as a real UI:
+     two-up products and legible type */
+  .pagebody{top:56px}
+  .pghero{margin:0 18px;border-radius:10px}
+  .pghero .copy{left:18px}
+  .pghero .copy u{font-size:7.5px;letter-spacing:.2em}
+  .pghero .copy em{font-size:20px;margin-top:5px}
+  .pghero .copy i{font-size:8.5px;padding:6px 13px;margin-top:8px}
+  .pgsec{margin:16px 18px 10px} .pgsec b{font-size:14px} .pgsec u{font-size:8px}
+  .pggrid{grid-template-columns:repeat(2,1fr);gap:14px;margin:0 18px}
+  .pgcard .ph{border-radius:9px}
+  .pgcard .tag{font-size:7px;padding:3px 7px;border-radius:4px}
+  .pgcard b{font-size:10.5px;margin-top:7px}
+  .pgcard i{font-size:8.5px}
+  .pgstrip{margin:16px 18px 0;flex-wrap:wrap;gap:5px 16px}
+  .pgstrip span{font-size:8px}
+
+  /* the detail page becomes a single column and re-types for a real phone */
+  .pdback{font-size:11px;padding:9px 16px 9px 12px;margin-bottom:16px;gap:7px}
+  .pdback svg{width:13px;height:13px}
+  .pdwrap{grid-template-columns:1fr;gap:18px;margin:0 18px 22px}
+  .pdstage{border-radius:12px}
+  .pdstage .tag{left:11px;top:11px;font-size:7px;padding:4px 8px;border-radius:4px}
+  .pdthumbs{gap:8px;margin-top:10px}
+  .pdthumb{width:54px;height:70px;border-radius:7px}
+  .pdline{font-size:9px;letter-spacing:.16em}
+  .pdname{font-size:26px;margin-top:9px}
+  .pdtagline{font-size:13px;margin-top:8px;line-height:1.55}
+  .pdspecs{margin-top:16px}
+  .pdspecs .row{grid-template-columns:124px minmax(0,1fr);gap:12px;padding:10px 0}
+  .pdspecs .row b{font-size:10.5px}
+  .pdspecs .row span{font-size:13.5px;line-height:1.5}
+  .pddesc{font-size:15px;line-height:1.7;margin-top:14px}
+  .pdblock{margin-top:18px}
+  .pdblock>b{font-size:10.5px;letter-spacing:.1em}
+  .pdblock ul{margin-top:8px;padding-left:18px}
+  .pdblock li{font-size:13.5px;line-height:1.62;margin-bottom:7px}
+  .pdblock ul.chips{gap:7px}
+  .pdblock ul.chips li{font-size:12.5px;padding:8px 14px}
+  .pdlegacy{margin-top:15px;padding-left:13px;font-size:14.6px}
+  .pdaward{font-size:11.6px}
+  .pdcta{min-width:0;width:100%;height:48px;font-size:15px;margin-top:22px}
+  .wa{width:54px;height:54px;right:14px;bottom:16px}
+  .wa svg{width:29px;height:29px}
+  /* the pill nav is full-bleed on a phone, so the switch gets its own centred
+     locale bar above it rather than floating over the logo or the store mock */
+  .lang{left:50%;right:auto;top:10px;bottom:auto;transform:translateX(-50%)}
+}
+
+/* =====================================================================
+   16. MOBILE PASS
+   Everything that has to hold on a real handset, in ONE block at the end of
+   the sheet. Two reasons it lives here rather than beside its component:
+
+     - the phone architecture block (10c) sits late in the file, so a rule
+       declared up next to the component it styles is silently overridden by
+       it. Last position makes the cascade unambiguous.
+     - the touch, coarse-pointer and safe-area fixes are not phone-width
+       facts. A 1024px iPad is a touch device with a home indicator too, and
+       those needs are unrelated to how narrow the viewport is.
+
+   Verified across 320x568, 360x640, 375x667, 390x844, 412x915, 430x932,
+   744x1133, 820x1180, 1024x768, 844x390 and 926x428: no horizontal overflow,
+   the storefront is reachable from every one, and the product detail fits.
+   ===================================================================== */
+
+/* ---- reading sizes ----
+   A phone is read at arm's length. Every size below is the desktop size plus
+   roughly a third, which is the difference between legible and a squint. */
+@media (max-width:700px){
+  /* the storefront grid */
+  .pgcard b{font-size:12.5px;margin-top:9px}
+  .pgcard i{font-size:10.5px;margin-top:5px}
+  .pgcard .tag{font-size:8.5px;padding:4px 8px}
+  .pgsec{margin:18px 18px 11px}
+  .pgsec b{font-size:16px}
+  .pgsec u{font-size:10px}
+  .pgstrip{margin:16px 18px 0;padding:11px 0}
+  .pgstrip span{font-size:9px}
+
+  /* the way out of a product, and the two editorial blocks around the prose */
+  .pdback{font-size:12.5px;padding:11px 18px 11px 14px}
+  .pdlegacy{font-size:15.5px;margin-top:16px;padding-left:13px}
+  .pdaward{font-size:12.5px;margin-top:18px}
+
+  /* the sheets were laid out for a 600px panel and waste a 390px screen */
+  .sheetpanel{padding:26px 20px calc(24px + env(safe-area-inset-bottom))}
+  .sheettitle{font-size:23px;padding-right:34px}
+  .sheetsub{font-size:14.5px;margin-top:10px}
+  .sheetstats{gap:8px;margin-top:20px}
+  .sheetstats div{padding:12px 7px}
+  .sheetstats b{font-size:20px}
+  .sheetstats span{font-size:10.5px;margin-top:6px}
+  .sheetlist,.sheetsteps{margin-top:22px}
+  .sheetlist li,.sheetsteps li{margin-bottom:18px}
+  .sheetsteps li{padding-left:42px}
+  .sheetsteps li::before{width:27px;height:27px;font-size:12px}
+  .sheetlist b{font-size:11.5px}
+  .sheetlist p,.sheetsteps p{font-size:14px;line-height:1.62}
+  .sheetsteps b{font-size:15.5px}
+  .sheetnote{font-size:13px;padding:13px 14px;margin-top:22px}
+  .sheetfoot .btn{height:48px;font-size:15px}
+
+  /* the support toast */
+  .toast{top:calc(10px + env(safe-area-inset-top));max-width:calc(100vw - 20px)}
+  .toastcard{padding:14px 15px 14px 13px;gap:12px}
+  .toasttext>b{font-size:10.5px}
+  .toastrow{margin-top:8px;padding:3px 0}
+  .toastrow em{font-size:11.5px;min-width:56px}
+  .toastrow span{font-size:15.5px}
+  .toasthours{font-size:11.5px;margin-top:10px}
+
+  /* ---- touch targets: 44px is the floor, not a guideline ---- */
+  .peekhint{min-height:48px;padding:0 18px}
+  .peekhint span.lbl{font-size:11.5px}
+  /* Open, the hint becomes the way back out and moves to the top centre — which
+     on a phone is exactly where the centred locale bar sits (measured: hint
+     174..217 at y16, locale bar 122..268 at y10). It goes to the top right
+     instead, where there is nothing to collide with. */
+  .stage.peek .peekhint{left:auto;right:14px;
+    top:calc(10px + env(safe-area-inset-top));bottom:auto;
+    width:44px;height:44px;min-height:44px;padding:0;border-radius:50%}
+  .lang button{min-width:44px;min-height:38px;padding:0 11px;font-size:13px}
+
+  /* iOS zooms the whole viewport when a focused field is under 16px, which
+     strands the visitor panned into the middle of the form. 16px is the
+     smallest size that does not trigger it. */
+  .leadfield input,.leadfield select,.leadfield textarea{font-size:16px}
+  .leadfield label,.leadfield .lbl{font-size:12px}
+  .leadcheck span{font-size:12.5px}
+  .leaderr{font-size:12.5px}
+  .ledesub{font-size:13.5px}
+  .leaddone h3{font-size:20px}
+  .leaddone p{font-size:14px}
+
+  /* ---- notches and home indicators: the edge elements move in ---- */
+  .lang{top:calc(10px + env(safe-area-inset-top))}
+  .wa{bottom:calc(16px + env(safe-area-inset-bottom));
+      right:calc(14px + env(safe-area-inset-right))}
+  /* The floating contact button sits over the storefront as it scrolls, which is
+     what a floating button does — but it must never be the thing covering the
+     last row permanently. This much scroll space lets it clear. */
+  .pagebody{padding-bottom:78px}
+}
+
+/* ---- TOUCH, AT ANY WIDTH ----
+   A 1024px iPad gets no phone rules at all, but it is still a finger on glass:
+   the nav links, the burger, the drawer hint and the locale switch are all
+   under 40px tall there. Pointer type, not viewport width, is the real signal. */
+@media (hover:none) and (pointer:coarse){
+  .peekhint{min-height:48px}
+  .burger{min-width:48px;min-height:48px}
+  .lang button{min-width:44px;min-height:40px}
+  .wa{min-width:56px;min-height:56px}
+  .toastrow{padding:5px 0}
+  .sheetclose{min-width:40px;min-height:40px}
+  .pdthumb{min-height:44px}
+  .links a{min-height:44px;display:flex;align-items:center}
+  .nav .btn{height:48px}
+  .pdback{min-height:46px}
+  .pgcard .go{width:26px;height:26px;right:9px;bottom:9px}
+  .pgcard .go::before{width:8px;height:8px}
+}
+
+/* ---- LANDSCAPE PHONE: measured, then left alone ----
+   Tried a two-column landscape (hero left, carousel right) and it was wrong
+   on both counts. Above 700px the tablet architecture is already in force, so
+   the flow-column rules here fought the absolute canvas and the storefront
+   mock measured 0px tall - the products became unreachable. Below 700px the
+   column layout already does the right thing: the mock fills the viewport and
+   the page body scrolls. Measured at 844x390 and 667x375 before the attempt:
+   mock 390/375 tall, 10 products reachable, detail fits. So nothing is
+   shipped here. */
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <div class="bg" aria-hidden="true"></div>
+  <div class="stars" id="stA" aria-hidden="true"></div>
+  <div class="stars" id="stB" aria-hidden="true"></div>
+
+  <div class="canvas" id="canvas">
+
+    <!-- ================= NAV ================= -->
+    <nav class="nav" id="nav">
+      <!-- the official Tsingtao lockup, not a redrawn stand-in: the roundel and
+           the wordmark are the brand, so neither is re-typed or re-coloured here -->
+      <a class="brandlock" id="brandlock" href="#" aria-label="Tsingtao">
+        <img class="mark" id="brandLogo" alt="Tsingtao" src="">
+      </a>
+
+      <div class="navmenu" id="navmenu">
+        <div class="links" id="links" lang="zh-Hans">
+          <a href="#" data-go="origin"  data-i18n="nav0"></a>
+          <a href="#" data-go="guide"   data-i18n="nav1"></a>
+          <a href="#" data-go="range"   data-i18n="nav2"></a>
+          <a href="#" data-i18n="nav3" data-lead="nav-contact"></a>
+          <a href="#" data-go="support" data-i18n="nav4"></a>
+        </div>
+          <a class="btn" href="#" data-lead="nav-cta"><span id="ctaLabel"></span></a>
+      </div>
+
+      <button class="burger" id="burger" type="button" aria-label="Opens menu"
+              aria-expanded="false" aria-controls="navmenu">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+
+    <!-- ================= HERO TYPE + BADGE + CTA ================= -->
+    <div class="stack">
+      <div class="badge" lang="zh-Hans">
+        <b id="badgeTxt"></b>
+      </div>
+
+      <h1 class="h1 l1" id="h1a" lang="zh-Hans"></h1>
+      <h1 class="h1" id="h1b" lang="zh-Hans"></h1>
+      <p class="sub s1" id="sub1" lang="zh-Hans"></p>
+      <p class="sub" id="sub2" lang="zh-Hans"></p>
+
+      <a class="btn cta2" href="#" data-lead="hero-cta"><span id="vpLabel"></span></a>
+    </div>
+
+    <!-- ================= THE RING ================= -->
+    <!-- The ring and the mock are siblings inside .showcase so the mock's
+         containing block is the same box on every architecture. On desktop
+         .showcase is a 1172x0 shell at the canvas origin, so the mock's design
+         coordinates (165, 558) resolve exactly as authored. -->
+    <div class="showcase" id="showcase">
+      <div class="ring" id="ring" aria-hidden="true"></div>
+
+      <!-- ================= THE BROWSER MOCK ================= -->
+      <div class="browser" id="browser">
+      <div class="bar">
+        <div class="dots" aria-hidden="true"><i style="background:#ee5c62"></i><i style="background:#f6b719"></i><i style="background:#12c02f"></i></div>
+        <div class="omni">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" aria-hidden="true" focusable="false">
+            <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.8-3.8" stroke-linecap="round"/>
+          </svg>
+          <span data-i18n="omni"></span>
+        </div>
+        <div class="tools" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path d="M12 16V4M8 8l4-4 4 4M4 15v5h16v-5"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" focusable="false">
+            <path d="M12 5v14M5 12h14"/></svg>
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M12 3 3 8l9 5 9-5-9-5Z" fill="#fff" opacity=".95"/>
+            <path d="M3 13l9 5 9-5" fill="none" stroke="#fff" stroke-width="2" opacity=".55" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="page">
+        <div class="ann">
+          <u style="left:20px">&#8249;</u>
+          <span data-i18n="ann"></span>
+          <u style="right:20px">&#8250;</u>
+        </div>
+
+        <div class="shoplogo" lang="zh-Hans">
+          <em data-i18n="shopA"></em>
+          <i data-i18n="shopB"></i>
+        </div>
+
+        <div class="shopicons" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="2" focusable="false">
+            <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.8-3.8" stroke-linecap="round"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="2" focusable="false">
+            <circle cx="12" cy="8" r="4"/><path d="M4.5 21c0-4.2 3.4-6.6 7.5-6.6s7.5 2.4 7.5 6.6"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="2" stroke-linejoin="round" focusable="false">
+            <path d="M5.5 8h13l-1.2 12H6.7L5.5 8Z"/><path d="M9 8V6.2A3 3 0 0 1 15 6.2V8"/></svg>
+        </div>
+
+        <div class="pagebody" id="pagebody">
+          <!-- the whole store front, hero banner included, is one swap target so
+               opening a product replaces the page rather than stacking under it -->
+          <div class="pgfront">
+          <div class="pghero">
+            <img id="bannerImg" alt="Tsingtao cans and bottles arranged in warm golden light">
+            <div class="scrim"></div>
+            <div class="copy" lang="zh-Hans">
+              <u data-i18n="heroU"></u>
+              <em data-i18n="heroEm"></em>
+              <i data-i18n="heroI"></i>
+            </div>
+          </div>
+
+          <div class="pgsec"><b data-i18n="secB"></b><u id="secCount"></u></div>
+
+          <div class="pggrid" id="pggrid"></div>
+            <div class="pgstrip" lang="zh-Hans">
+            <span data-i18n="strip0"></span>
+            <span data-i18n="strip1"></span>
+            <span data-i18n="strip2"></span>
+            <span data-i18n="strip3"></span>
+          </div>
+          </div><!-- /.pgfront -->
+
+          <!-- product detail, swapped in over the catalogue when a tile is used -->
+          <div class="pgdetail" id="pgdetail" aria-live="polite"></div>
+        </div><!-- /.pagebody -->
+      </div>
+      </div><!-- /.browser -->
+    </div><!-- /.showcase -->
+  </div><!-- /.canvas -->
+
+  <button class="peekhint" id="peekhint" type="button" aria-expanded="false" aria-controls="browser">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <path d="M5 15l7 7 7-7"/>
+    </svg>
+    <span class="lbl" data-i18n="peekOpen"></span>
+  </button>
+
+  <div class="lang" id="lang" role="group" aria-label="Language / Ngôn ngữ / 语言">
+    <button type="button" data-lang="vi" aria-pressed="true" lang="vi">VI</button>
+    <button type="button" data-lang="en" aria-pressed="false" lang="en">EN</button>
+    <button type="button" data-lang="zh" aria-pressed="false" lang="zh">中文</button>
+  </div>
+
+  <!-- ================= LEAD / ENQUIRY FORM ================= -->
+  <form class="lead" id="leadForm" novalidate hidden>
+    <div class="leadpanel" role="dialog" aria-modal="true" aria-labelledby="leadTitle">
+      <button class="leadclose" id="leadClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+
+      <div class="leadintro">
+        <p class="leadkicker" data-i18n="leadKicker"></p>
+        <h2 class="leadtitle" id="leadTitle" data-i18n="leadTitle"></h2>
+        <p class="ledesub" data-i18n="leadSub"></p>
+      </div>
+
+      <div class="leadgrid" id="leadGrid"></div>
+
+      <label class="leadcheck">
+        <input type="checkbox" id="leadConsent" name="consent">
+        <span data-i18n="leadConsent"></span>
+      </label>
+
+      <p class="leaderr" id="leadErr" role="alert" aria-live="assertive"></p>
+
+      <div class="leadactions">
+        <button type="submit" class="btn leadcta" id="leadSubmit">
+          <span data-i18n="leadSend"></span>
+        </button>
+        <p class="leadnote" data-i18n="leadNote"></p>
+      </div>
+
+      <div class="leaddone" id="leadDone" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.7 2.6L16 9.6"/>
+        </svg>
+        <h3 data-i18n="leadDoneTitle"></h3>
+        <p data-i18n="leadDoneBody"></p>
+        <p class="leadsent" id="leadSent"></p>
+        <div class="leaddonebtns">
+          <a class="btn leadcta" id="leadMail" href="#"><span data-i18n="leadOpenMail"></span></a>
+          <button type="button" class="btn leadcta leadghost" id="leadClose2">
+            <span data-i18n="leadClose2"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- ================= EDITORIAL SHEETS (Nguồn gốc / Hướng dẫn) =================
+       One dialog, two bodies. Origin is a timeline; Guide is a numbered how-to.
+       Both are rendered from content data so a locale switch swaps the prose
+       without re-opening the sheet. -->
+  <div class="sheet" id="sheet" hidden>
+    <div class="sheetpanel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+      <button class="sheetclose" id="sheetClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+      <div class="sheetbody" id="sheetBody" lang="zh-Hans"></div>
+    </div>
+  </div>
+
+  <!-- ================= SUPPORT TOAST =================
+       Support is a single tap, not a journey: the number and the address are
+       both on screen, and both are live links. -->
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+    <div class="toastcard">
+      <span class="toasticon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4.5 5.5c0 8 6 14 14 14l2-3.2-4.2-1.9-2 2a15 15 0 0 1-6.7-6.7l2-2L7.7 3.5 4.5 5.5Z"/>
+        </svg>
+      </span>
+      <div class="toasttext">
+        <b data-i18n="supportTitle"></b>
+        <a class="toastrow" id="toastPhone" href="#">
+          <em data-i18n="supportPhone"></em><span id="toastPhoneVal"></span>
+        </a>
+        <a class="toastrow" id="toastMail" href="#">
+          <em data-i18n="supportMail"></em><span id="toastMailVal"></span>
+        </a>
+        <p class="toasthours" data-i18n="supportHours"></p>
+      </div>
+    </div>
+    <span class="toastbar" aria-hidden="true"></span>
+  </div>
+
+  <a class="wa" href="#" aria-label="WhatsApp">
+    <svg viewBox="0 0 32 32" fill="#fff" aria-hidden="true" focusable="false">
+      <path d="M16 3C8.82 3 3 8.82 3 16c0 2.31.6 4.47 1.66 6.31L3 29l6.9-1.61A12.96 12.96 0 0 0 16 29c7.18 0 13-5.82 13-13S23.18 3 16 3Zm7.61 18.44c-.32.9-1.87 1.72-2.58 1.79-.66.07-1.5.1-2.42-.15-.56-.15-1.27-.35-2.19-.69-3.85-1.4-6.36-4.66-6.55-4.88-.19-.22-1.55-2.07-1.55-3.94 0-1.88.98-2.8 1.33-3.18.35-.38.76-.47 1.02-.47.26 0 .51 0 .73.01.24.01.56-.09.87.66.32.77 1.09 2.65 1.19 2.85.1.2.17.43.03.69-.13.27-.2.43-.39.66-.2.24-.41.53-.59.71-.2.2-.4.41-.17.8.22.39 1 1.65 2.15 2.67 1.48 1.31 2.72 1.72 3.11 1.91.39.2.62.17.85-.1.24-.27 1.01-.98 1.28-1.32.27-.34.54-.28.91-.17.37.11 2.4.9 2.81 1.06.41.17.69.25.79.39.1.14.1.8-.22 1.7Z"/>
+    </svg>
+  </a>
+</div>
+
+<script>
+/* =====================================================================
+   IMAGERY — every product is inlined as a WebP data URI, so this file is
+   genuinely self-contained: no build step, no framework, no local assets.
+   ===================================================================== */
+const DATA = /*__DATA__*/{};
+
+const U = id => DATA[id] || '';
+
+/* declared here, not in the fitter section further down: the store, form and
+   drawer sections all call it while this script is still being evaluated */
+const $ = id => document.getElementById(id);
+
+/* =====================================================================
+   PRODUCT CATALOGUE — the single source of truth.
+   Schema is CMS-ready and stable: identity and numbers are language-neutral
+   and sortable, all prose lives under `copy[locale]`, and media is addressed
+   by key rather than by URL so a CMS can swap the asset without touching copy.
+   The same object is exported as catalog.json for the Dev team.
+
+   Granularity note: a "product" here is a SKU, not a flavour family. Tsingtao
+   sells the same lager in a 330 bottle, a 640 bottle and a 500 can, and each
+   one is a real product with its own occasion, its own pour and its own copy.
+   Anything shared between them (the 1903 formula, the Laoshan water) is stated
+   once per record rather than inherited, so no edit here can contradict another.
+
+   Each record carries two editorial fields on top of the specification:
+     legacy — a pull-quote line, the one sentence a visitor should remember
+     award  — third-party recognition, where it genuinely exists
+   The specification numbers are never restated in the prose: they are rendered
+   from `specs` so a copy edit can never contradict a spec edit.
+   ===================================================================== */
+const CATALOG = {
+  schema_version: '1.3',
+  brand: { id:'vertex', wordmark:'BREWER', kicker:'TSINGTAO', origin:'Qingdao, China', founded:1903 },
+  locales: ['vi','en','zh'],
+  default_locale: 'vi',
+  products: [
+
+  /* ---------------------------------------------------------------- 1 */
+  {
+    id:'tsg-lager-330', slug:'premium-lager-330-bottle', sku:'TSG-LGR-330B',
+    line:{vi:'Dòng Truyền Thống', en:'The Heritage Line', zh:'经典系列'},
+    category:'lager', order:1, featured:true, ring:'plain', ringCaption:'Premium 330',
+    media:{ tile:'144', gallery:['144','105','167'] },
+    specs:{
+      abv:4.7,
+      formats:[{kind:'bottle', volume_ml:330}],
+      ingredients:{vi:'Nước tinh khiết, mạch nha lúa mạch, hoa bia, men bia',
+                   en:'Purified water, barley malt, hops, yeast',
+                   zh:'纯净水、大麦麦芽、啤酒花、酵母'},
+      fermentation:null, energy_kcal_100ml:null, sugar_free:false
+    },
+    copy:{
+      vi:{ name:'Bia Chai Tsingtao Premium 330ml',
+           tagline:'Chai nhỏ, công thức nguyên bản — đủ trọn cho một buổi tối.',
+           badge:'CHAI 330ML',
+           legacy:'Một chai 330 ml. Đủ cho một người, đủ lâu cho một câu chuyện.',
+           description:'Đây là chai xanh 330 ml quen thuộc nhất của Tsingtao tại Việt Nam. Kích thước vừa để uống từ tối tới khuya mà không phải tính toán, vừa đủ lớn để lớp bọt vẫn đứng được trên miệng chai thay vì lún xuống ngay.\n\nBên trong là công thức ủ bia truyền thống chuẩn Đức từ năm 1903, ủ lạnh và chín ổn định suốt 12 tháng trước khi đóng chai. Vị đắng nhẹ, hậu vị sạch và cân bằng — thứ vị có thể uống liên tục mà không bao giờ thấy nặng.',
+           features:['Chai 330 ml gọn nhẹ, dễ mang đi và bảo quân lạnh suốt buổi.',
+                     'Cùng công thức lager truyền thống với chai lớn — không rút ngắn bất kỳ khâu nào.',
+                     'Vị đắng nhẹ, cân bằng, dễ uống ngay cả khi trời nóng.'],
+           pairing:['Một buổi tối riêng','Ăn vặt đêm','Nhâm nhi cùng bạn'],
+           award:{vi:'Huy chương Vàng World Beer Championship · European Beer Star',
+                  en:'World Beer Championship Gold Medal · European Beer Star',
+                  zh:'世界啤酒锦标赛金奖 · 欧洲啤酒之星'},
+           cta:'Đặt chai 330ml' },
+      en:{ name:'Tsingtao Premium Lager 330ml Bottle',
+           tagline:'The small bottle, the unchanged recipe — one whole evening in it.',
+           badge:'330ML BOTTLE',
+           legacy:'One 330 ml bottle. Enough for one person, long enough for a story.',
+           description:'This is the familiar 330 ml green bottle of Tsingtao in Vietnam. Small enough to drink from dinner to late without counting, large enough that the head still stands on the mouth of the bottle instead of collapsing at once.\n\nInside is the German brewing formula of 1903, cold-conditioned and matured for twelve months before it is filled. Light bitterness, a clean balanced finish — a taste you can keep drinking without ever finding it heavy.',
+           features:['A 330 ml bottle: light to carry, easy to keep cold on the move.',
+                     'The same traditional lager formula as the larger bottle, with no step shortened.',
+                     'Light, balanced bitterness that stays drinkable on a hot day.'],
+           pairing:['An evening on its own','Late-night snacks','Nibbling with friends'],
+           award:{en:'World Beer Championship Gold Medal · European Beer Star',
+                  vi:'Huy chương Vàng World Beer Championship · European Beer Star',
+                  zh:'世界啤酒锦标赛金奖 · 欧洲啤酒之星'},
+           cta:'Order the 330ml' },
+      zh:{ name:'青岛啤酒 经典拉格 330毫升',
+           tagline:'小瓶身，原配方——足够撑起一个晚上。',
+           badge:'330毫升玻璃瓶',
+           legacy:'一支 330 毫升。为一个人足量，为一个故事够久。',
+           description:'这是青岛啤酒在越南最熟悉的一支绿瓶 330 毫升。体积刚好，喝到深夜也不必计算；又足够大，让泡沫仍能挺立在瓶口，而不是一开盖就塌下去。\n\n瓶中是 1903 年的德国传统酿造配方，灌装前经过 12 个月冷链熟成。苦味柔和，收尾干净平衡——一种可以一直喝下去、从不觉得厚重的味道。',
+           features:['330 毫升瓶身，轻便易携，便于全程保持冰凉。',
+                     '与大瓶完全相同的传统拉格配方，没有任何一道工序被缩短。',
+                     '苦味柔和平衡，天气炎热时同样适合饮用。'],
+           pairing:['独享的夜晚','夜宵','与朋友小酌'],
+           award:{zh:'世界啤酒锦标赛金奖 · 欧洲啤酒之星',
+                  en:'World Beer Championship Gold Medal · European Beer Star',
+                  vi:'Huy chương Vàng World Beer Championship · European Beer Star'},
+           cta:'选购 330 毫升' }
+    }
+  },
+
+  /* ---------------------------------------------------------------- 2 */
+  {
+    id:'tsg-lager-640', slug:'premium-lager-640-bottle', sku:'TSG-LGR-640B',
+    line:{vi:'Dòng Truyền Thống', en:'The Heritage Line', zh:'经典系列'},
+    category:'lager', order:2, featured:true, ring:'plain', ringCaption:'Premium 640',
+    media:{ tile:'105', gallery:['105','167'] },
+    specs:{
+      abv:4.7,
+      formats:[{kind:'bottle', volume_ml:640}],
+      ingredients:{vi:'Nước tinh khiết, mạch nha lúa mạch, hoa bia, men bia',
+                   en:'Purified water, barley malt, hops, yeast',
+                   zh:'纯净水、大麦麦芽、啤酒花、酵母'},
+      fermentation:null, energy_kcal_100ml:null, sugar_free:false
+    },
+    copy:{
+      vi:{ name:'Bia Chai Tsingtao Premium 640ml',
+           tagline:'Nửa lít trong một chai — vì đôi khi hai người giải quyết chuyện đó nhanh hơn.',
+           badge:'CHAI 640ML',
+           legacy:'Hai chai 330 ml. Một chai 640 ml. Không phải hai lần rót.',
+           description:'Hai người và một đêm, chai 640 ml xử lý gọn hơn. Nó vẫn là cùng công thức lager từ năm 1903, cùng độ lạnh 12 tháng, cùng nước suối dưới chân núi Lao Sơn — chỉ khác ở chỗ bạn không phải rót hai lần.\n\nVai chai được nổi núm theo kiểu cổ điển, và đó không phải chi tiết trang trí: nó giữ cho lớp bọt dày và hương thơm bị giữ lại lâu hơn trong quá trình rót. Hình dáng chai cũng cho bạn một lý do rất hợp lý để không vội vàng.',
+           features:['Chai 640 ml — dung tích chuẩn cho hai người, tiết kiệm hơn hai chai nhỏ.',
+                     'Vai chai nổi núm giữ bọt và hương thơm lâu hơn khi rót.',
+                     'Cùng công thức và độ chín 12 tháng với toàn bộ dòng lager.'],
+           pairing:['Chia nhẹ bữa tiệc','Ăn cùng món hải sản nướng','Bữa cơm gia đình'],
+           award:{vi:'Cùng công thức với dòng lager truyền thống',
+                  en:'The same formula as the heritage lager range',
+                  zh:'与经典拉格系列同配方'},
+           cta:'Đặt chai 640ml' },
+      en:{ name:'Tsingtao Premium Lager 640ml Bottle',
+           tagline:'Half a litre in one bottle — because sometimes two people settle it faster.',
+           badge:'640ML BOTTLE',
+           legacy:'Two 330s. One 640. Not two pours.',
+           description:'Two people, one evening, and a 640 ml bottle handles it more neatly. It is still the same 1903 lager formula, the same twelve months of cold conditioning, the same spring water from the foot of Mount Laoshan — the only difference is that you pour once.\n\nThe shoulder carries a traditional embossed crown, and that is not decoration: it holds the head thicker and keeps the aroma in the glass longer as you pour. The shape also gives you a perfectly reasonable excuse not to rush.',
+           features:['A 640 ml bottle — the sensible size for two, and less fuss than two small ones.',
+                     'The embossed shoulder keeps the head and the aroma in the glass for longer.',
+                     'The same formula and twelve-month conditioning as the whole lager range.'],
+           pairing:['Easy sharing at a gathering','Grilled seafood','A family meal'],
+           award:{en:'The same formula as the heritage lager range',
+                  vi:'Cùng công thức với dòng lager truyền thống',
+                  zh:'与经典拉格系列同配方'},
+           cta:'Order the 640ml' },
+      zh:{ name:'青岛啤酒 经典拉格 640毫升',
+           tagline:'一瓶半升——有时两个人解决这件事比倒两次更快。',
+           badge:'640毫升玻璃瓶',
+           legacy:'两支 330，一支 640。少倒一次。',
+           description:'两个人，一个晚上，640 毫升瓶装处理得更从容。它依然是 1903 年的拉格配方，同样 12 个月冷链熟成，同样取自崂山山泉——唯一的区别是你只需倒一次。\n\n瓶肩保留了传统的压模皇冠瓶盖，这不是装饰：它能让泡沫更厚实，也能在倒酒时把香气在杯中留得更久。而瓶身的比例，也给了你一个完全站得住脚的理由——不着急。',
+           features:['640 毫升瓶身，两人分享的合宜容量，比两支小瓶更省事。',
+                     '瓶肩压模设计，倒酒时让泡沫与香气在杯中停留更久。',
+                     '与整个拉格系列相同的配方与 12 个月熟成工艺。'],
+           pairing:['聚会分享','烤制海鲜','家庭聚餐'],
+           award:{zh:'与经典拉格系列同配方',
+                  en:'The same formula as the heritage lager range',
+                  vi:'Cùng công thức với dòng lager truyền thống'},
+           cta:'选购 640 毫升' }
+    }
+  },
+
+  /* ---------------------------------------------------------------- 3 */
+  {
+    id:'tsg-lager-500', slug:'premium-lager-500-can', sku:'TSG-LGR-500C',
+    line:{vi:'Dòng Truyền Thống', en:'The Heritage Line', zh:'经典系列'},
+    category:'lager', order:3, featured:true, ring:'pay', ringCaption:'Premium 500',
+    media:{ tile:'9206', gallery:['9206','113'] },
+    specs:{
+      abv:4.7,
+      formats:[{kind:'can', volume_ml:500}],
+      ingredients:{vi:'Nước tinh khiết, mạch nha lúa mạch, hoa bia, men bia',
+                   en:'Purified water, barley malt, hops, yeast',
+                   zh:'纯净水、大麦麦芽、啤酒花、酵母'},
+      fermentation:null, energy_kcal_100ml:null, sugar_free:false
+    },
+    copy:{
+      vi:{ name:'Bia Lon Tsingtao Premium 500ml',
+           tagline:'Lon tiêu chuẩn của nhà máy — lạnh, gọn, và sẵn sàng ngay.',
+           badge:'LON 500ML',
+           legacy:'Lon 500 ml. Dung tích lớn nhất trong dòng lager thường.',
+           description:'Đây là lon 500 ml — định dạng mà nhà máy tin dùng nhất và cũng là lon lớn nhất trong dòng lager thường. Nó khác chai ở đúng một điểm quan trọng: giữ nhiệt tốt hơn, mở ra vẫn lạnh ngay cả sau một lúc đi ngoài.\n\nVị thì y hệt. Cùng công thức ủ bia truyền thống chuẩn Đức từ 1903, cùng độ chín lạnh 12 tháng, cùng ba nguyên liệu cốt lõi. Nhấc lon lạnh, đậy nắp, kéo — xong.',
+           features:['Lon 500 ml giữ nhiệt tốt nhất trong ba định dạng, uống ở đâu cũng còn lạnh.',
+                     'Vị hoàn toàn giống dòng chai 330 ml và 640 ml.',
+                     'Vỏ lon tái chế, nhẹ hơn thủy tinh và dễ vận chuyển xa.'],
+           pairing:['Tiệc có đông người','Nhâm nhi cùng đồ ăn vặt','Dựng cuối ngày làm việc'],
+           award:{vi:'Lon 500 ml — định dạng phổ biến nhất',
+                  en:'The 500 ml can — the most widely served format',
+                  zh:'500毫升易拉罐——最常见的规格'},
+           cta:'Đặt lon 500ml' },
+      en:{ name:'Tsingtao Premium Lager 500ml Can',
+           tagline:'The brewery’s standard can — cold, compact, and ready.',
+           badge:'500ML CAN',
+           legacy:'The 500 ml can. The largest format in the standard lager range.',
+           description:'This is the 500 ml can — the format the brewery relies on most, and the largest can in the standard lager range. It differs from the bottles in exactly the way that matters: it holds its cold far better, and opens cold even after a while out and about.\n\nThe taste is identical. The same German brewing formula of 1903, the same twelve months of cold conditioning, the same three core ingredients. Pick it up cold, pull the tab, and it is done.',
+           features:['The 500 ml can holds its cold best of the three formats, wherever you open it.',
+                     'The taste is exactly that of the 330 ml and 640 ml bottles.',
+                     'A recyclable aluminium shell: lighter than glass and far easier to move.'],
+           pairing:['A busy table','Snacks and small plates','The end of a working day'],
+           award:{en:'The 500 ml can — the most widely served format',
+                  vi:'Lon 500 ml — định dạng phổ biến nhất',
+                  zh:'500毫升易拉罐——最常见的规格'},
+           cta:'Order the 500ml' },
+      zh:{ name:'青岛啤酒 经典拉格 500毫升',
+           tagline:'酒厂的标准罐——冰凉、紧凑、随时开喝。',
+           badge:'500毫升易拉罐',
+           legacy:'500 毫升。经典拉格系列中最大的规格。',
+           description:'这是 500 毫升易拉罐——酒厂最倚重的规格，也是常规拉格系列中容量最大的罐装。它与瓶装的差别恰好落在最要紧的一点：保冷性更好，即便带着出门一阵子，拉环拉开时依然是凉的。\n\n味道完全一致。同样的 1903 年德国传统配方，同样 12 个月冷链熟成，同样三样核心原料。拿起来，拉环，一气呵成。',
+           features:['500 毫升罐在三种规格中保冷性最佳，随时随地打开都是冰凉的。',
+                     '风味与 330 毫升、640 毫升瓶装完全相同。',
+                     '铝罐可回收，比玻璃更轻，也更便于远途运输。'],
+           pairing:['热闹的餐桌','小食与下酒菜','一天的收尾'],
+           award:{zh:'500毫升易拉罐——最常见的规格',
+                  en:'The 500 ml can — the most widely served format',
+                  vi:'Lon 500 ml — định dạng phổ biến nhất'},
+           cta:'选购 500 毫升' }
+    }
+  },
+
+  /* ---------------------------------------------------------------- 4 */
+  {
+    id:'tsg-1903-premium', slug:'1903-premium', sku:'TSG-PRM-500',
+    line:{vi:'Dòng Thượng Hạng', en:'The Reserve Line', zh:'尊享系列'},
+    category:'lager', order:4, featured:true, ring:'plain', ringCaption:'1903 Reserve',
+    media:{ tile:'152', gallery:['152','052'] },
+    specs:{
+      abv:5.0,
+      formats:[{kind:'can', volume_ml:500}],
+      ingredients:{vi:'Nước tinh khiết, mạch nha lúa mạch, hoa bia, men bia',
+                   en:'Purified water, barley malt, hops, yeast',
+                   zh:'纯净水、大麦麦芽、啤酒花、酵母'},
+      fermentation:{vi:'Lên men kép (Double Fermentation)',
+                    en:'Double fermentation',
+                    zh:'双酵母发酵'},
+      energy_kcal_100ml:null, sugar_free:false
+    },
+    copy:{
+      vi:{ name:'Bia Tsingtao 1903 Premium 500ml',
+           tagline:'Tinh hoa chắt lọc dành cho người sành bia.',
+           badge:'LÊN MEN KÉP',
+           legacy:'Đọc lại mẻ bia đầu tiên. Năm 1903.',
+           description:'Phiên bản đặc biệt được tạo ra để tôn vinh mẻ bia đầu tiên ra đời năm 1903 — thời khắc Tsingtao chính thức bước vào thế giới. Đây không phải một dòng bia mới, mà là cách nhà máy kể lại khoảnh khắc khởi đầu của chính mình.\n\nQuy trình lên men kép độc quyền kéo dài lâu hơn thông thường, giúp vị bia đậm đà và sánh mịn hơn, bền hơn trên lưỡi. Hương thơm mạch nha caramel bùng nổ ngay từ ngụm đầu tiên, kéo dài đến hậu vị khô và sâu, nơi hương gỗ và caramel cùng đọng lại.',
+           features:['Hàm lượng mạch nha cao hơn mang lại màu vàng hổ phách óng ánh và cấu trúc vị sâu lắng.',
+                     'Lên men kép độc quyền: thời gian ủ dài hơn, vị đậm và bền hơn.',
+                     'Thiết kế lon vàng xanh đậm phối hoa văn mạ vàng, khẳng định đẳng cấp người thưởng thức.'],
+           pairing:['Thịt đỏ','Bít tết','Các món hầm đậm vị'],
+           award:{vi:'Rượu bia dành cho người hiểu và tôn trọng quy trình',
+                  en:'A beer for drinkers who respect the process',
+                  zh:'为懂工艺、敬重流程的饮者而酿'},
+           cta:'Trải nghiệm đẳng cấp 1903' },
+      en:{ name:'Tsingtao 1903 Premium Lager 500ml',
+           tagline:'The distilled essence, reserved for the discerning drinker.',
+           badge:'DOUBLE FERMENTED',
+           legacy:'A return to the first brew. 1903.',
+           description:'A limited expression created to honour the first brew of 1903 — the moment Tsingtao entered the world. This is not a new line of beer; it is how the brewery retells its own beginning.\n\nA proprietary extended double-fermentation process gives a fuller, silkier beer that holds longer on the palate. Caramel-malt aroma arrives on the very first sip and carries through to a dry, deep finish where notes of wood and caramel settle together.',
+           features:['Elevated wort strength delivers luminous amber colour and a layered, structured palate.',
+                     'Proprietary double fermentation: a longer, slower build for a fuller, longer finish.',
+                     'A deep gold and green can finished in gold, designed to signal the drinker’s standing.'],
+           pairing:['Red meat','Steak','Slow braises'],
+           award:{en:'A beer for drinkers who respect the process',
+                  vi:'Rượu bia dành cho người hiểu và tôn trọng quy trình',
+                  zh:'为懂工艺、敬重流程的饮者而酿'},
+           cta:'Experience the 1903 Reserve' },
+      zh:{ name:'青岛啤酒 1903 尊享 500毫升',
+           tagline:'为懂酒之人精心酿造的精华之作。',
+           badge:'双酵母发酵',
+           legacy:'重回第一缸佳酿。1903 年。',
+           description:'为致敬 1903 年首缸佳酿而推出的特别版本——那是青岛正式走向世界的时刻。这不是一条全新的产品线，而是酒厂对自身起点的一次复述。\n\n专有的延长双酵母发酵工艺带来更饱满、更丝滑的酒体，在口腔中停留更久。自第一口便释放焦糖麦芽香气，并一路延伸至干爽深邃的回味，尾韵中木质与焦糖层层交织。',
+           features:['更高麦芽浓度带来澄澈琥珀色泽与层次分明的口感结构。',
+                     '专有双酵母发酵：更长的熟成时间，更饱满、更耐久的余韵。',
+                     '深金与墨绿罐体，饰以烫金纹样，彰显饮用者的品位与身份。'],
+           pairing:['红肉','牛排','浓味炖菜'],
+           award:{zh:'为懂工艺、敬重流程的饮者而酿',
+                  en:'A beer for drinkers who respect the process',
+                  vi:'Rượu bia dành cho người hiểu và tôn trọng quy trình'},
+           cta:'体验 1903 尊享' }
+    }
+  },
+
+  /* ---------------------------------------------------------------- 5 */
+  {
+    id:'tsg-zero-can', slug:'zero-alcohol-can', sku:'TSG-ZER-330C',
+    line:{vi:'Dòng Không Độ', en:'The Zero Range', zh:'无醇系列'},
+    category:'zero', order:5, featured:true, ring:'off', ringCaption:'Zero Can',
+    media:{ tile:'129', gallery:['129','136'] },
+    specs:{
+      abv:0.0,
+      formats:[{kind:'can', volume_ml:330}],
+      ingredients:{vi:'Nước, mạch nha lúa mạch, hoa bia, men bia, chất điều chỉnh độ chua',
+                   en:'Water, barley malt, hops, yeast, acidity regulators',
+                   zh:'水、大麦麦芽、啤酒花、酵母、酸度调节剂'},
+      fermentation:null, energy_kcal_100ml:null, sugar_free:false, low_calorie:true
+    },
+    copy:{
+      vi:{ name:'Bia Lon Tsingtao Không Độ 330ml',
+           tagline:'Trọn vị bia nguyên bản — hoàn toàn không cồn.',
+           badge:'0.0% · ÍT CALO',
+           legacy:'Sạch như nước. Đậm như bia.',
+           description:'Đây là câu trả lời cho một câu hỏi đơn giản: có thể vừa giữ trọn hương vị bia, vừa tỉnh táo tuyệt đối? Công nghệ lọc cồn hiện đại của nhà máy loại bỏ cồn một cách chọn lọc, thay vì làm biến đổi cấu trúc bia.\n\nKết quả là một sản phẩm vẫn giữ nguyên hương thơm, độ sánh và hậu vị của dòng lager truyền thống. Ít calo, không cồn, và dễ dàng trở thành lựa chọn mặc định cho những khoảnh khắc cần sự tỉnh táo.',
+           features:['Công nghệ lọc cồn tiên tiến giữ trọn dưỡng chất và vị bia tươi mát.',
+                     '0.0% cồn, hàm lượng calo thấp — an toàn tuyệt đối khi lái xe, làm việc văn phòng hoặc trong các buổi giao tiếp thể thao.',
+                     'Vỏ lon nhẹ, dễ bảo quản lạnh và dễ mang đi hơn chai thủy tinh.'],
+           pairing:['Lái xe','Văn phòng','Buổi giao tiếp thể thao'],
+           award:{vi:'Công nghệ lọc cồn đạt chứng nhận tại Đức',
+                  en:'De-alcoholisation technology certified in Germany',
+                  zh:'脱醇工艺技术获德国认证'},
+           cta:'Sảng khoái không giới hạn' },
+      en:{ name:'Tsingtao Zero Alcohol Lager 330ml Can',
+           tagline:'All of the lager character, with none of the alcohol.',
+           badge:'0.0% · LOW CAL',
+           legacy:'Clean as water. Full as beer.',
+           description:'This is the answer to a simple question: can you keep the taste of beer and stay completely clear? The brewery’s modern de-alcoholisation technology removes the alcohol selectively, rather than dismantling the structure of the beer.\n\nWhat is left carries the aroma, body and finish of the traditional lager range. Low in calories, free of alcohol, and an easy default for every occasion that calls for clarity.',
+           features:['Advanced de-alcoholisation technology retains the nutritional value and refreshment of real beer.',
+                     '0.0% alcohol and low in calories — completely safe for driving, the office, and sporting occasions.',
+                     'A light can: easier to keep cold and easier to carry than glass.'],
+           pairing:['Driving','The office','Sporting occasions'],
+           award:{en:'De-alcoholisation technology certified in Germany',
+                  vi:'Công nghệ lọc cồn đạt chứng nhận tại Đức',
+                  zh:'脱醇工艺技术获德国认证'},
+           cta:'Refreshment without limits' },
+      zh:{ name:'青岛啤酒 无醇 330毫升',
+           tagline:'完整的拉格风味，全程无酒精。',
+           badge:'0.0% · 低热量',
+           legacy:'清澈如水，饱满如啤。',
+           description:'这是对一个简单问题的回答：能否既保留啤酒风味，又保持绝对清醒？酒厂先进的脱醇技术以选择性的方式剥离酒精，而非破坏啤酒本身的结构。\n\n留下来的，是传统拉格系列完整的香气、酒体与回味。低热量、无酒精，在任何需要保持清醒的场合，它都可以成为默认选择。',
+           features:['先进的脱醇技术，完整保留营养价值与啤酒的清爽口感。',
+                     '酒精度 0.0%、低热量，驾车、办公及各类体育社交场合均可安心饮用。',
+                     '罐装轻便，比玻璃更易保持冰凉，也更方便携带。'],
+           pairing:['驾车','办公','体育社交'],
+           award:{zh:'脱醇工艺技术获德国认证',
+                  en:'De-alcoholisation technology certified in Germany',
+                  vi:'Công nghệ lọc cồn đạt chứng nhận tại Đức'},
+           cta:'畅爽无极限' }
+    }
+  },
+
+  /* ---------------------------------------------------------------- 6 */
+  {
+    id:'tsg-zero-bottle', slug:'zero-alcohol-bottle', sku:'TSG-ZER-330B',
+    line:{vi:'Dòng Không Độ', en:'The Zero Range', zh:'无醇系列'},
+    category:'zero', order:6, featured:false, ring:'plain', ringCaption:'Zero Bottle',
+    media:{ tile:'136', gallery:['136','129'] },
+    specs:{
+      abv:0.0,
+      formats:[{kind:'bottle', volume_ml:330}],
+      ingredients:{vi:'Nước, mạch nha lúa mạch, hoa bia, men bia, chất điều chỉnh độ chua',
+                   en:'Water, barley malt, hops, yeast, acidity regulators',
+                   zh:'水、大麦麦芽、啤酒花、酵母、酸度调节剂'},
+      fermentation:null, energy_kcal_100ml:null, sugar_free:false, low_calorie:true
+    },
+    copy:{
+      vi:{ name:'Bia Chai Tsingtao Không Độ 330ml',
+           tagline:'Vị không cồn, trong cái vỏ chai quen thuộc.',
+           badge:'0.0% · CHAI 330ML',
+           legacy:'Không cồn, nhưng vẫn là một chai bia đúng nghĩa.',
+           description:'Cùng dòng không cồn, nhưng đựng trong chai xanh 330 ml quen thuộc thay vì lon. Vị, độ sánh và hậu vị hoàn toàn giống — công nghệ lọc cồn áp dụng như nhau, chỉ khác lớp vỏ ngoài.\n\nVới nhiều người, hình thức vẫn là một phần của trải nghiệm. Chai giữ nhiệt chậm hơn lon một chút nhưng dễ rót hơn, và bạn có thể đặt nó cạnh những chai khác trên bàn mà không ai hỏi vì sao.',
+           features:['Vị và công nghệ lọc cồn giống hệt dòng lon 330 ml.',
+                     'Chai xanh 330 ml dễ rót, giữ nhiệt tốt hơn các loại nhựa thông thường.',
+                     '0.0% cồn, ít calo — cùng đối tượng và cùng dịp như dòng lon.'],
+           pairing:['Bữa cơm gia đình','Buổi tối không cần tỉnh','Nhâm nhi cùng bạn'],
+           award:{vi:'Cùng dòng với lon Không Độ 330 ml',
+                  en:'The same range as the Zero 330 ml can',
+                  zh:'与无醇 330 毫升罐装同系列'},
+           cta:'Đặt chai không độ' },
+      en:{ name:'Tsingtao Zero Alcohol Lager 330ml Bottle',
+           tagline:'The alcohol-free taste, in the bottle people already know.',
+           badge:'0.0% · 330ML BOTTLE',
+           legacy:'No alcohol, and still unmistakably a bottle of beer.',
+           description:'The same zero-alcohol beer, in the familiar 330 ml green bottle rather than a can. The taste, the body and the finish are identical — the de-alcoholisation technology is applied exactly the same way; only the packaging differs.\n\nFor many people the form is part of the experience. A bottle holds its cold a little more steadily than a can, pours more cleanly, and you can set it down on the table beside the others without anyone asking why.',
+           features:['Identical taste and de-alcoholisation technology to the Zero 330 ml can.',
+                     'A 330 ml green bottle: cleaner to pour and steadier on temperature than plastic.',
+                     '0.0% alcohol and low in calories — the same audience and the same occasions as the can.'],
+           pairing:['A family meal','An evening that does not need to end early','Nibbling with friends'],
+           award:{en:'The same range as the Zero 330 ml can',
+                  vi:'Cùng dòng với lon Không Độ 330 ml',
+                  zh:'与无醇 330 毫升罐装同系列'},
+           cta:'Order the zero bottle' },
+      zh:{ name:'青岛啤酒 无醇 330毫升 瓶装',
+           tagline:'无醇的口感，装在人们熟悉的那只瓶子里。',
+           badge:'0.0% · 330毫升',
+           legacy:'不含酒精，却仍是一只地道的啤酒瓶。',
+           description:'同一款无醇啤酒，装在熟悉的 330 毫升绿瓶里，而不是易拉罐。风味、酒体与回味完全一致——脱醇技术的应用方式分毫不差，差别只在包装。\n\n对很多人来说，形式本身也是体验的一部分。瓶装的保温比罐装更稳一些，倒起来也更利落，你可以把它放在餐桌上其他瓶子旁边，没有人会问为什么。',
+           features:['风味与脱醇工艺与无醇 330 毫升罐装完全相同。',
+                     '330 毫升绿瓶：比塑料容器更保温，倒酒也更利落。',
+                     '酒精度 0.0%、低热量——与罐装适合同一批人群、同一批场合。'],
+           pairing:['家庭聚餐','不必早散的夜晚','与朋友小酌'],
+           award:{zh:'与无醇 330 毫升罐装同系列',
+                  en:'The same range as the Zero 330 ml can',
+                  vi:'Cùng dòng với lon Không Độ 330 ml'},
+           cta:'选购无醇瓶装' }
+    }
+  },
+
+  /* ---------------------------------------------------------------- 7 */
+  {
+    id:'tsg-lemon-pilsner', slug:'lemon-pilsner', sku:'TSG-LMN-330',
+    line:{vi:'Dòng Giải Khát Vị Chanh', en:'The Lemon Refreshment', zh:'柠檬系列'},
+    category:'refreshment', order:7, featured:true, ring:'off', ringCaption:'Lemon Pilsner',
+    media:{ tile:'097', gallery:['097'] },
+    specs:{
+      abv:0.0,
+      formats:[{kind:'can', volume_ml:330}],
+      ingredients:{vi:'Nước, mạch nha lúa mạch, nước cốt chanh tươi, hoa bia, men bia',
+                   en:'Water, barley malt, natural lemon juice, hops, yeast',
+                   zh:'水、大麦麦芽、鲜榨柠檬汁、啤酒花、酵母'},
+      fermentation:null, energy_kcal_100ml:60, sugar_free:false
+    },
+    copy:{
+      vi:{ name:'Bia Chanh Tsingtao 330ml',
+           tagline:'Bùng nổ sảng khoái, giải nhiệt tức thì.',
+           badge:'CHANH TƯƠI · 60 kcal',
+           legacy:'Nước cốt chanh thật, không hương liệu tổng hợp.',
+           description:'Một cách giải khát hoàn toàn khác: dòng Pilsner nhạt được pha trộn với nước cốt chanh tươi tự nhiên, đúng tỉ lệ mà một quầy bar tại Đức cũng sẽ pha. Vị chua ngọt cân bằng, sưa sủa mà không chua gắt.\n\nMở lon là thấy hơi ga lấp lánh, mùi chanh bùng lên trước cả khi nếm. Chỉ 60 kcal mỗi 100 ml và không chứa cồn, đây là thức uống của những ngày nắng đổ ngập — hoặc ngay sau buổi tập chạy buổi sáng.',
+           features:['Ít calo, không chứa cồn, kết hợp vị chua ngọt tự nhiên dễ uống cho cả nam và nữ.',
+                     'Chỉ 60 kcal / 100ml — nhẹ hơn phần lớn nước ngọt cùng loại.',
+                     'Thức uống lý tưởng sau các buổi tập luyện thể thao ngoài trời.'],
+           pairing:['Sau tập luyện','Ngày hè nắng nóng','Dã ngoại ngoài trời'],
+           award:{vi:'Chiết xuất nước cốt chanh tươi tự nhiên',
+                  en:'Pressed from natural fresh lemon',
+                  zh:'采用天然鲜榨柠檬汁'},
+           cta:'Giải nhiệt ngay' },
+      en:{ name:'Tsingtao Lemon Pilsner 330ml',
+           tagline:'A burst of refreshment that cuts straight through the heat.',
+           badge:'REAL LEMON · 60 kcal',
+           legacy:'Real pressed lemon. No artificial flavouring.',
+           description:'A different kind of refreshment entirely: a light Pilsner base blended with natural fresh lemon juice, in proportions a German bar would recognise. The result is a balanced sweet-sharp finish — bright, never sour.\n\nOpen the can and the sparkle is visible before you even taste it; the lemon lifts first. At just 60 kcal per 100 ml with no alcohol, it is built for the hottest days of the year — or for straight after a morning run.',
+           features:['Low in calories and free of alcohol, with a natural sweet-tart balance made for everyone.',
+                     'Only 60 kcal / 100ml — lighter than most soft drinks of its kind.',
+                     'The natural choice after outdoor training and exercise.'],
+           pairing:['After exercise','Hot summer days','Outdoor gatherings'],
+           award:{en:'Pressed from natural fresh lemon',
+                  vi:'Chiết xuất nước cốt chanh tươi tự nhiên',
+                  zh:'采用天然鲜榨柠檬汁'},
+           cta:'Cool down instantly' },
+      zh:{ name:'青岛啤酒 柠檬皮尔森 330毫升',
+           tagline:'清爽爆发，即刻降温。',
+           badge:'真柠檬 · 60千卡',
+           legacy:'鲜榨柠檬，不含合成香精。',
+           description:'一种全然不同的解暑方式：清爽皮尔森与新鲜天然柠檬汁按德式酒吧的经典比例调配。酸甜平衡，明快而不酸涩。\n\n开罐瞬间气泡跃动，柠檬香气先于味觉抵达。每 100 毫升仅 60 千卡且不含酒精，专为酷暑难耐的日子而酿——或晨跑之后的第一口。',
+           features:['低卡、不含酒精，天然酸甜平衡，人人皆宜。',
+                     '每 100 毫升仅 60 千卡，比同类软饮更轻盈。',
+                     '户外运动与锻炼之后的理想饮品。'],
+           pairing:['运动之后','炎热夏日','户外聚会'],
+           award:{zh:'采用天然鲜榨柠檬汁',
+                  en:'Pressed from natural fresh lemon',
+                  vi:'Chiết xuất nước cốt chanh tươi tự nhiên'},
+           cta:'即刻降温' }
+    }
+  },
+
+  /* ---------------------------------------------------------------- 8 */
+  {
+    id:'tsg-lunar-special', slug:'special-edition-2025', sku:'TSG-EDT25-473',
+    line:{vi:'Phiên Bản Giới Hạn 2025', en:'Limited 2025 Edition', zh:'2025 限量版'},
+    category:'limited', order:8, featured:false, ring:'launch',
+    media:{ tile:'089', gallery:['089'] },
+    specs:{
+      abv:4.7,
+      formats:[{kind:'bottle', volume_ml:473}],
+      ingredients:{vi:'Nước tinh khiết, mạch nha lúa mạch, hoa bia, men bia',
+                   en:'Purified water, barley malt, hops, yeast',
+                   zh:'纯净水、大麦麦芽、啤酒花、酵母'},
+      fermentation:null, energy_kcal_100ml:null, sugar_free:false, limited:true
+    },
+    copy:{
+      vi:{ name:'Bia Tsingtao Phiên Bản 2025',
+           tagline:'Năm Rồng trong một chai trắng — mở ra một năm phúc lộc đầy nhà.',
+           badge:'GIỚI HẠN 2025',
+           legacy:'Một năm, một con vậy, một mẻ bia riêng.',
+           description:'Năm 2025, nhà máy dành riêng một mẻ bia giới hạn cho dịp Tết và trao cho nó một vỏ riêng: thân chai trắng tinh, cổ chai in dòng chữ 2025 SPECIAL EDITION, thân chai vẽ con rồng xanh cuộn lên từ đám mây, và ở dưới cùng là nét thư pháp 福 — chữ Phúc.\n\nBên trong vẫn là Tsingtao Premium Lager với hương vị nguyên bản từ năm 1903. Nhưng khi mở nắp, người nhận không chỉ uống bia — họ mở ra một món quà mang ý nghĩa phong thủy, và có người sẽ giữ lại làm vật trưng bày.',
+           features:['Vỏ chai trắng in hoạ tiết riêng cho năm 2025, số lượng có hạn.',
+                     'Chất lượng từ mẻ bia giới hạn tinh chọn, dành riêng cho dịp năm mới.',
+                     'Sản phẩm dành riêng cho thị trường Việt Nam, không phân phối thường niên.'],
+           pairing:['Quà tặng đối tác','Trưng bày trong nhà'],
+           award:{vi:'Số lượng giới hạn, chỉ phát hành trong năm',
+                  en:'A limited run, released only within the year',
+                  zh:'限量发行，仅在当年供应'},
+           cta:'Sưu tầm phiên bản 2025' },
+      en:{ name:'Tsingtao Special Edition 2025',
+           tagline:'The Year of the Dragon in a white bottle — an auspicious year, opened.',
+           badge:'LIMITED 2025',
+           legacy:'One year, one animal, one brew of its own.',
+           description:'For 2025 the brewery set aside a single limited batch for the New Year and gave it a shell to match: a pure white bottle, 2025 SPECIAL EDITION set in type around the neck, a blue dragon curling up from cloud across the body, and at the base the calligraphic character 福 — fortune.\n\nInside is the original Tsingtao Premium Lager, unchanged since 1903. But when the cap comes off, the recipient is not simply opening a beer — they are opening a gift with auspicious meaning, one some will keep rather than drink.',
+           features:['A pure white bottle printed for 2025 only, in strictly limited numbers.',
+                     'Selected from a single limited brew reserved exclusively for the New Year.',
+                     'Produced for the Vietnamese market and not part of the annual range.'],
+           pairing:['Corporate gifting','Home display'],
+           award:{en:'A limited run, released only within the year',
+                  vi:'Số lượng giới hạn, chỉ phát hành trong năm',
+                  zh:'限量发行，仅在当年供应'},
+           cta:'Collect the 2025 edition' },
+      zh:{ name:'青岛啤酒 2025 特别版',
+           tagline:'龙年装在一只白瓶里——开瓶即开一个好年。',
+           badge:'2025 限量版',
+           legacy:'一年，一生肖，一批专属佳酿。',
+           description:'2025 年，酒厂为新春单独留出一批限量酒液，并为其配上专属瓶身：通体纯白，瓶颈处印着 2025 SPECIAL EDITION，瓶身绘有一条自云间腾起的蓝色巨龙，底部则是一个行书「福」字。\n\n瓶中仍是 1903 年未曾改变的青岛经典拉格。但当瓶盖旋开，收礼之人开启的不仅是一瓶啤酒，更是一份承载吉祥寓意的礼物——也有人会将它留下珍藏。',
+           features:['纯白瓶身，2025 年专属印花，发行数量严格有限。',
+                     '限量精选酒液批次，专为新春佳节而酿。',
+                     '专为越南市场打造，不属于常规年度产品。'],
+           pairing:['商务礼赠','居家陈列'],
+           award:{zh:'限量发行，仅在当年供应',
+                  en:'A limited run, released only within the year',
+                  vi:'Số lượng giới hạn, chỉ phát hành trong năm'},
+           cta:'收藏 2025 特别版' }
+    }
+  },
+
+  /* ---------------------------------------------------------------- 9 */
+  {
+    id:'tsg-centennial', slug:'centennial-journey', sku:'TSG-CEN-750',
+    line:{vi:'Dòng Di Sản Nút Gài', en:'The Heritage Reserve', zh:'典藏系列'},
+    category:'reserve', order:9, featured:false, ring:'power',
+    media:{ tile:'066', gallery:['066'] },
+    specs:{
+      abv:5.2,
+      formats:[{kind:'swing_top_bottle', volume_ml:750}],
+      ingredients:{vi:'Nước tinh khiết, mạch nha lúa mạch, hoa bia, men bia',
+                   en:'Purified water, barley malt, hops, yeast',
+                   zh:'纯净水、大麦麦芽、啤酒花、酵母'},
+      fermentation:null, energy_kcal_100ml:null, sugar_free:false
+    },
+    copy:{
+      vi:{ name:'Bia Di Sản Tsingtao Trăm Năm 750ml',
+           tagline:'Chạm tay vào dòng thời gian của một thế kỷ.',
+           badge:'NÚT GÀI · 750ml',
+           legacy:'Một trăm năm nghệ thuật nấu bia, đóng trong một chai.',
+           description:'Cất giữ hình hài một thế kỷ: 750 ml, chai thủy tinh nâu, nắp gài kiểu châu Ân. Chi tiết nhỏ nhưng quyết định — nắp gài tạo áp suất bên trong, giữ lớp bọt mịn và độ tươi ngon như thể chai vừa rời khay chuyển ra khỏi nhà máy.\n\nĐây không phải bia để uống nhanh. Đây là chai để mở chậm, dành cho một dịp đáng nhớ — hoặc để đặt trên kệ quầy bar nhà một người hiểu thứ gì đáng giữ. Vị đậm hơn dòng lager tiêu chuẩn, dành cho người thưởng thức lâu hơn.',
+           features:['Thiết kế nắp gài độc bản, tái hiện phong cách thưởng thức bia thượng lưu cổ điển.',
+                     'Áp suất nội tại giữ trọn bọt mịn và độ tươi trong thời gian dài.',
+                     'Phù hợp làm quà tặng độc đáo hoặc trưng bày trong các không gian quầy bar riêng tư.'],
+           pairing:['Món thưởng thức để dành','Trưng bày quầy bar riêng'],
+           award:{vi:'Kỷ niệm 100 năm nghệ thuật nấu bia',
+                  en:'A centennial of the craft of brewing',
+                  zh:'百年酿造工艺纪念之作'},
+           cta:'Sở hữu chai di sản' },
+      en:{ name:'Tsingtao Centennial Journey 750ml',
+           tagline:'A century of brewing craft, held in the hand.',
+           badge:'SWING-TOP · 750ml',
+           legacy:'A hundred years of brewing craft, sealed in one bottle.',
+           description:'A century kept in a bottle: 750 ml, brown crystal, European-style swing-top. The detail is small but decisive — the closure holds pressure inside, preserving the fine head and the live carbonation as though the bottle had only just left the brewery.\n\nThis is not a beer to drink quickly. It is a bottle to open slowly, for an occasion worth marking — or to set on the shelf of someone who understands what is worth keeping. Fuller than the standard lager, and made for the slower drinker.',
+           features:['A distinctive swing-top closure that reinstates a classic cellar ritual.',
+                     'Internal pressure holds the fine head and freshness over a long period.',
+                     'Suited to distinctive gifting, or to display in a private bar setting.'],
+           pairing:['A bottle to be savoured','Private bar display'],
+           award:{en:'A centennial of the craft of brewing',
+                  vi:'Kỷ niệm 100 năm nghệ thuật nấu bia',
+                  zh:'百年酿造工艺纪念之作'},
+           cta:'Own the heritage bottle' },
+      zh:{ name:'青岛啤酒 百年纪念 750毫升',
+           tagline:'触手可及的一个世纪酿造工艺。',
+           badge:'木塞款 · 750毫升',
+           legacy:'一百年的酿造工艺，封印在一只瓶中。',
+           description:'用一个世纪的模样装进瓶中：750 毫升，棕色水晶瓶身，欧式木塞封口。细节虽小，却至关重要——木塞在瓶内形成气压，锁住细腻泡沫与鲜活碳酸，仿佛刚刚离开工厂。\n\n这不是用来豪饮的啤酒，而是一只值得慢慢开启的瓶子：为一个值得铭记的时刻而开，或放在一位懂得珍藏之人的私人酒柜上。酒体比标准拉格更饱满，为慢饮者而生。',
+           features:['独特木塞设计，重现经典酒窖的品鉴仪式。',
+                     '瓶内气压锁住细腻泡沫，长久保持新鲜。',
+                     '适合作为别致赠礼，或陈列于私人酒柜。'],
+           pairing:['值得慢饮的佳酿','私人酒柜陈列'],
+           award:{zh:'百年酿造工艺纪念之作',
+                  en:'A centennial of the craft of brewing',
+                  vi:'Kỷ niệm 100 năm nghệ thuật nấu bia'},
+           cta:'拥有典藏之瓶' }
+    }
+  },
+
+  /* --------------------------------------------------------------- 10 */
+  {
+    id:'tsg-seaweed-soda', slug:'seaweed-soda', sku:'TSG-SOD-320',
+    line:{vi:'Dòng Nước Khoáng Tảo Biển', en:'The Mineral Soda', zh:'海藻苏打水'},
+    category:'soda', order:10, featured:false, ring:'shop',
+    media:{ tile:'078', gallery:['078'] },
+    specs:{
+      abv:0.0,
+      formats:[{kind:'slim_can', volume_ml:320}],
+      ingredients:{vi:'Nước, chiết xuất tảo biển tự nhiên, khoáng chất thiết yếu, men bia',
+                   en:'Water, natural seaweed extract, essential minerals, yeast',
+                   zh:'水、天然海藻萃取物、必需矿物质、酵母'},
+      fermentation:null, energy_kcal_100ml:0, sugar_free:true, keto:true
+    },
+    copy:{
+      vi:{ name:'Nước Tảo Biển Tsingtao 320ml',
+           tagline:'Thanh lọc tự nhiên — sức sống từ đại dương.',
+           badge:'KHÔNG ĐƯỜNG',
+           legacy:'Từ biển sâu, lên thẳng vào lon.',
+           description:'Thức uống soda thế hệ mới, ứng dụng chiết xuất tảo biển tự nhiên kết hợp khoáng chất thiết yếu. Không phải nước ngọt hương vị, và cũng không phải soda thông thường — nó mang vị mặn mòi rất nhẹ của biển, pha cùng độ ga sảng khoái.\n\nDành cho người muốn uống thứ gì đó tươi mới mà vẫn kiểm soát được lượng đường và calo nạp vào. Không đường, không calo, phù hợp với chế độ Keto và bất kỳ ai đang cải thiện lại cách mình ăn uống.',
+           features:['Không đường, không calo, phù hợp cho người ăn kiêng (Keto / Healthy).',
+                     'Chiết xuất tảo biển tự nhiên, giàu vi khoáng chất — hỗ trợ thanh lọc cơ thể.',
+                     'Lon thon gọn 320 ml, vừa tay và vừa túi.'],
+           pairing:['Chế độ ăn Keto','Giải khát nhẹ mỗi ngày'],
+           award:{vi:'Vị mặn tự nhiên từ khoáng chất biển sâu',
+                  en:'A natural saline note from deep-sea minerals',
+                  zh:'源自深海矿物质的天然海盐风味'},
+           cta:'Thanh lọc tự nhiên' },
+      en:{ name:'Tsingtao Seaweed Soda Water 320ml',
+           tagline:'Natural clarity — vitality drawn from the ocean.',
+           badge:'SUGAR-FREE',
+           legacy:'From the deep sea, straight into the can.',
+           description:'A next-generation refreshment built on natural seaweed extract and essential minerals. It is neither a flavoured soft drink nor an ordinary soda — it carries the faintest saline note of the sea, lifted by a clean sparkle.\n\nFor anyone who wants something fresh while still keeping sugar and calories under control. Sugar-free, calorie-free, and suited to keto as well as to anyone revising the way they eat.',
+           features:['Sugar-free and calorie-free, suited to keto and health-conscious diets.',
+                     'Natural seaweed extract, mineral rich, formulated to cleanse the body.',
+                     'A slim 320 ml can that fits the hand and the bag.'],
+           pairing:['Keto diets','Everyday light refreshment'],
+           award:{en:'A natural saline note from deep-sea minerals',
+                  vi:'Vị mặn tự nhiên từ khoáng chất biển sâu',
+                  zh:'源自深海矿物质的天然海盐风味'},
+           cta:'Refresh, naturally' },
+      zh:{ name:'青岛啤酒 海藻苏打水 320毫升',
+           tagline:'天然净澈，取自海洋的生命力。',
+           badge:'无糖',
+           legacy:'来自深海，直入罐中。',
+           description:'新一代 SODA 饮品，运用天然海藻萃取并结合必需矿物质。它既非调味汽水，也非普通苏打——带着海洋极淡的咸鲜气息，以及清爽干净的气泡。\n\n适合想喝得清新、又想掌控糖分与热量摄入的人。无糖、无热量，适配生酮饮食，也适合每一位正在重新审视自己饮食方式的人。',
+           features:['无糖、无热量，适合生酮与健康饮食人群。',
+                     '天然海藻萃取，富含矿物质，帮助清洁身体。',
+                     '320 毫升细长罐，一手可握，随身好带。'],
+           pairing:['生酮饮食','日常轻爽解渴'],
+           award:{zh:'源自深海矿物质的天然海盐风味',
+                  en:'A natural saline note from deep-sea minerals',
+                  vi:'Vị mặn tự nhiên từ khoáng chất biển sâu'},
+           cta:'天然净澈' }
+    }
+  }
+  ]
+};
+
+/* index by id — the UI addresses products by id, never by array position */
+const PRODUCT = {};
+CATALOG.products.forEach(function(p){ PRODUCT[p.id] = p; });
+const BY_ORDER = CATALOG.products.slice().sort(function(a,b){ return a.order - b.order; });
+
+/* The carousel is a separate concern from the catalogue, but it borrows the
+   product captions so a card and a detail page can never disagree. */
+const SHOTS = [
+  {v:'pay',    u:U('152')},
+  {v:'launch', u:U('089'), p:'tsg-lunar-special'},
+  {v:'shop',   u:U('078'), p:'tsg-seaweed-soda'},
+  {v:'brand',  u:U('105'), p:'tsg-lager-640'},
+  {v:'frete',  u:U('167'), p:'tsg-lager-640'},
+  {v:'plain',  u:U('052'), p:'tsg-1903-premium'},
+  {v:'power',  u:U('066'), p:'tsg-centennial'},
+  {v:'plain',  u:U('136'), p:'tsg-zero-bottle'},
+  {v:'off',    u:U('097'), p:'tsg-lemon-pilsner'},
+  {v:'plain',  u:U('9206'),p:'tsg-lager-500'}
+];
+/* every product line appears in the store catalogue — not a hand-picked four */
+const GOODS = BY_ORDER.map(function(p){ return p.id; });
+
+/* =====================================================================
+   UI COPY — every visible string outside the catalogue, in all three
+   languages. Prose that belongs to a product lives in CATALOG, not here.
+   ===================================================================== */
+const I18N = {
+  vi: {
+    docTitle: 'Vertex — Dòng bia Tsingtao chính hãng',
+    kick: 'TSINGTAO', wm: 'BREWER',
+    nav0: 'Nguồn gốc', nav1: 'Hướng dẫn', nav2: 'Dòng sản phẩm', nav3: 'Liên hệ', nav4: 'Hỗ trợ',
+    navCta: 'Mua ngay', heroCta: 'Đặt hàng',
+    supportTitle: 'Hỗ trợ khách hàng',
+    supportPhone: 'Điện thoại', supportMail: 'Email', supportHours: '8:00 – 21:00 · Thứ 2 – Chủ Nhật',
+    supportAria: 'Mở thông tin hỗ trợ', sheetAria: 'Đóng',
+
+    badge: 'TSINGTAO VIETNAM',
+    h1a: 'Bia Tsingtao', h1b: 'Cao cấp',
+    sub1: '<b><span class="nb">Mười hai tháng</span> ủ lạnh tại Thanh Đảo</b> với',
+    sub2: 'lúa mạch, hoa bia và một thế kỷ kiên nhẫn trong từng giọt.',
+    ann: 'Lạnh thường quyền, từ nhà máy đến tay bạn',
+    omni: 'Danh mục bia Tsingtao chính hãng',
+    shopA: 'TSINGTAO', shopB: 'BIA CAO CẤP',
+    heroU: 'Từ năm 1903',
+    heroEm: 'Giữ trọn<br>công thức gốc.',
+    heroI: 'KHÁM PHÁ DÒNG SẢN PHẨM',
+    secB: 'Danh mục sản phẩm', ask: 'Liên hệ',
+    count: '{n} dòng sản phẩm', backToCatalog: 'Về danh mục',
+    specAbv: 'Nồng độ cồn', specFormat: 'Quy cách', specTech: 'Kỹ thuật',
+    specEnergy: 'Năng lượng', specDiet: 'Chế độ ăn', specIngredients: 'Thành phần',
+    keyFeatures: 'Điểm nhấn sản phẩm', foodPairing: 'Gợi ý kết hợp ẩm thực',
+    dietSugarFree: 'Không đường', dietLowCal: 'Ít calo', dietKeto: 'Keto',
+    leadKicker: 'Đăng ký thông tin', leadTitle: 'Nhận báo giá từ nhân viên kinh doanh',
+    leadSub: 'Điền thông tin bên dưới, đội ngũ kinh doanh sẽ liên hệ trong 24 giờ làm việc.',
+    leadSend: 'Gửi đăng ký', leadNote: 'Thông tin chỉ dùng để liên hệ tư vấn, không chia sẻ bên thứ ba.',
+    leadConsent: 'Tôi đồng ý để được liên hệ tư vấn về sản phẩm này.',
+    leadClose2: 'Đóng', leadDoneTitle: 'Đã gửi thành công',
+    leadDoneBody: 'Cảm ơn bạn. Yêu cầu đã được chuyển tới nhân viên kinh doanh phụ trách.',
+    leadOpenMail: 'Mở ứng dụng email',
+    leadMailTo: 'nhấn để gửi tới',
+    fName: 'Họ và tên', fPhone: 'Số điện thoại', fEmail: 'Email',
+    fCompany: 'Tên cô ty', fRole: 'Loại hình', fProduct: 'Sản phẩm quan tâm',
+    fQty: 'Số lượng dự kiến', fAddress: 'Địa chỉ giao hàng', fNote: 'Ghi chú',
+    fNamePh: 'Nguyễn Văn A', fCompanyPh: 'Công ty TNHH ABC', fAddressPh: 'Số, đường, quận, tỉnh/thành',
+    fNotePh: 'Nhu cầu cụ thể của bạn…',
+    rName: 'Vui lòng nhập họ tên.', rPhone: 'Vui lòng nhập số điện thoại.',
+    rPhoneFmt: 'Số điện thoại chưa hợp lệ.', rEmail: 'Vui lòng nhập email.',
+    rEmailFmt: 'Email chưa hợp lệ.', rProduct: 'Vui lòng chọn sản phẩm quan tâm.',
+    rConsent: 'Vui lòng đồng ý để chúng tôi liên hệ.', rSend: 'Gửi thất bại. Vui lòng thử lại.',
+    rQty: 'Vui lòng nhập số lượng.',
+    roleCustomer: 'Khách hàng cá nhân', roleReseller: 'Đại lý / Nhà phân phối',
+    roleRetail: 'Cửa hàng bán lẻ', roleHoReCa: 'Khách sạn / Nhà hàng', roleOther: 'Khác',
+    qty: 'Dưới 50 thùng', qty1: '50 – 200 thùng', qty2: 'Trên 200 thùng', qtyOther: 'Chưa xác định',
+    pick: '— Chọn sản phẩm —',
+    strip0: 'Giao hàng toàn quốc',
+    strip1: 'Trả góp 12 tháng 0%',
+    strip2: 'Đổi trả trong 30 ngày',
+    strip3: 'Ủ theo công thức năm 1903',
+    wa: 'WhatsApp', burger: 'Mở menu',
+    peekOpen: 'Xem cửa hàng', peekClose: 'Đóng'
+  },
+  en: {
+    docTitle: 'Vertex — The official Tsingtao range',
+    kick: 'TSINGTAO', wm: 'BREWER',
+    nav0: 'Origin', nav1: 'Learn how', nav2: 'Core Range', nav3: 'Contact', nav4: 'Support',
+    navCta: 'Shop the range', heroCta: 'Order now',
+    supportTitle: 'Customer support',
+    supportPhone: 'Phone', supportMail: 'Email', supportHours: '8:00 am – 9:00 pm · Mon – Sun',
+    supportAria: 'Open support details', sheetAria: 'Close',
+
+    badge: 'TSINGTAO VIETNAM',
+    h1a: 'Tsingtao Premium', h1b: 'Lager',
+    sub1: '<b>Twelve months of cold storage in <span class="nb">Qingdao</span></b> matured on',
+    sub2: 'barley, hops and a century of patience in every bottle.',
+    ann: 'Chilled daily, straight from the brewery',
+    omni: 'Shop Focused – Tsingtao Range',
+    shopA: 'TSINGTAO', shopB: 'PREMIUM LAGER',
+    heroU: 'Since 1903',
+    heroEm: 'Brewed to the<br>original recipe.',
+    heroI: 'EXPLORE THE RANGE',
+    secB: 'The range', ask: 'Contact',
+    count: '{n} products', backToCatalog: 'Back to the range',
+    specAbv: 'ABV', specFormat: 'Formats', specTech: 'Technique',
+    specEnergy: 'Energy', specDiet: 'Diet', specIngredients: 'Ingredients',
+    keyFeatures: 'Key features', foodPairing: 'Food pairing',
+    dietSugarFree: 'Sugar-free', dietLowCal: 'Low calorie', dietKeto: 'Keto',
+    leadKicker: 'Register your interest', leadTitle: 'Get a quote from our sales team',
+    leadSub: 'Complete the form below and a sales representative will contact you within one business day.',
+    leadSend: 'Send enquiry', leadNote: 'Your details are used for sales contact only and are never shared with third parties.',
+    leadConsent: 'I agree to be contacted about this product.',
+    leadClose2: 'Close', leadDoneTitle: 'Enquiry ready to send',
+    leadDoneBody: 'Thank you. Your request has been passed to the responsible sales representative.',
+    leadOpenMail: 'Open your email app',
+    leadMailTo: 'press send to deliver',
+    fName: 'Full name', fPhone: 'Phone', fEmail: 'Email',
+    fCompany: 'Company', fRole: 'Customer type', fProduct: 'Product of interest',
+    fQty: 'Estimated quantity', fAddress: 'Delivery address', fNote: 'Message',
+    fNamePh: 'Jane Doe', fCompanyPh: 'ABC Trading Co.', fAddressPh: 'Street, district, city',
+    fNotePh: 'Tell us about your requirement…',
+    rName: 'Please enter your name.', rPhone: 'Please enter your phone number.',
+    rPhoneFmt: 'That phone number does not look right.', rEmail: 'Please enter your email.',
+    rEmailFmt: 'That email address does not look right.', rProduct: 'Please choose a product.',
+    rConsent: 'Please agree to be contacted so we can reply.', rSend: 'Could not send. Please try again.',
+    rQty: 'Please enter an estimated quantity.',
+    roleCustomer: 'Private customer', roleReseller: 'Reseller / Distributor',
+    roleRetail: 'Retail store', roleHoReCa: 'Hotel / Restaurant', roleOther: 'Other',
+    qty: 'Under 50 cases', qty1: '50 – 200 cases', qty2: 'Over 200 cases', qtyOther: 'Not sure yet',
+    pick: '— Choose a product —',
+    strip0: 'Free nationwide delivery',
+    strip1: 'Pay 12x interest free',
+    strip2: 'Returns in 30 days',
+    strip3: 'Brewed to the 1903 recipe',
+    wa: 'WhatsApp', burger: 'Opens menu',
+    peekOpen: 'See the storefront', peekClose: 'Close'
+  },
+  zh: {
+    docTitle: 'Vertex — 青岛啤酒官方系列',
+    kick: 'TSINGTAO', wm: 'BREWER',
+    nav0: '品牌起源', nav1: '了解工艺', nav2: '产品系列', nav3: '联系我们', nav4: '客服',
+    navCta: '立即选购', heroCta: '立即下单',
+    supportTitle: '客户支持',
+    supportPhone: '电话', supportMail: '邮箱', supportHours: '8:00 – 21:00 · 周二至周日',
+    supportAria: '查看支持方式', sheetAria: '关闭',
+
+    badge: 'TSINGTAO VIETNAM',
+    h1a: '青岛啤酒', h1b: '特制',
+    sub1: '<b>青岛窖藏<span class="nb">十二个月</span></b>，以',
+    sub2: '麦芽、啤酒花与百年的耐心，酿成每一滴。',
+    ann: '每日冷链，直达厂门',
+    omni: '青岛啤酒官方产品目录',
+    shopA: 'TSINGTAO', shopB: '特制拉格',
+    heroU: '始于 1903 年',
+    heroEm: '百年传承<br>原味配方',
+    heroI: '探索产品系列',
+    secB: '产品目录', ask: '联系我们',
+    count: '{n} 款产品', backToCatalog: '返回目录',
+    specAbv: '酒精度', specFormat: '规格', specTech: '工艺',
+    specEnergy: '能量', specDiet: '饮食', specIngredients: '配料',
+    keyFeatures: '产品亮点', foodPairing: '搭配建议',
+    dietSugarFree: '无糖', dietLowCal: '低热量', dietKeto: '生酮',
+    leadKicker: '登记咨询', leadTitle: '获取业务团队报价',
+    leadSub: '请填写以下信息，业务代表将在一个工作日内与您联系。',
+    leadSend: '提交咨询', leadNote: '您的信息仅用于业务联系，不会提供给第三方。',
+    leadConsent: '我同意贵司就此产品与我联系。',
+    leadClose2: '关闭', leadDoneTitle: '咨询已备好',
+    leadDoneBody: '感谢您的咨询，我们已将需求转交给负责的业务代表。',
+    leadOpenMail: '打开邮件应用',
+    leadMailTo: '点击发送',
+    fName: '姓名', fPhone: '电话', fEmail: '电子邮箱',
+    fCompany: '公司名称', fRole: '客户类型', fProduct: '感兴趣的产品',
+    fQty: '预计采购量', fAddress: '收货地址', fNote: '备注',
+    fNamePh: '张三', fCompanyPh: 'ABC 贸易有限公司', fAddressPh: '街道、辖区、城市',
+    fNotePh: '请描述您的具体需求…',
+    rName: '请填写姓名。', rPhone: '请填写联系电话。',
+    rPhoneFmt: '电话号码格式不正确。', rEmail: '请填写电子邮箱。',
+    rEmailFmt: '邮箱格式不正确。', rProduct: '请选择感兴趣的产品。',
+    rConsent: '请同意我们与您联系。', rSend: '提交失败，请稍后重试。',
+    rQty: '请填写预计采购量。',
+    roleCustomer: '个人客户', roleReseller: '经销商 / 代理商',
+    roleRetail: '零售门店', roleHoReCa: '酒店 / 餐厅', roleOther: '其他',
+    qty: '50 箱以下', qty1: '50 – 200 箱', qty2: '200 箱以上', qtyOther: '暂未确定',
+    pick: '— 请选择产品 —',
+    strip0: '全国免运费配送',
+    strip1: '支持 12 期免息',
+    strip2: '30 天无忧退换',
+    strip3: '遵循 1903 年配方',
+    wa: 'WhatsApp', burger: '打开菜单',
+    peekOpen: '查看产品目录', peekClose: '关闭'
+  }
+};
+
+/* ---- one translated string, with a per-language fallback to English ---- */
+let LANG = 'vi';
+const T = (o) => (o && (o[LANG] || o.en)) || '';
+const L = () => I18N[LANG] || I18N.en;
+
+/* =====================================================================
+   INK TARGETS PER LOCALE.
+   The fitter always nails two things exactly: the cap HEIGHT and the
+   BASELINE. The ink WIDTH is the one measurement that cannot be shared across
+   scripts — a CJK glyph is roughly square, so forcing it into the Latin
+   reference measure would stretch "青岛啤酒" by ~2.7x. So each locale declares
+   its own measure, chosen to sit within ~0.7-1.0x of the natural width of its
+   own glyphs. Composition anchors (centre x=586, every baseline y) are
+   untouched, so the design still holds together in all three.
+   ===================================================================== */
+const INK = {
+  en: {h1a:563.5, h1b:197.5, sub1:389, sub2:311, badge:158, cta:87, vp:76, links:317},
+  vi: {h1a:470,   h1b:222,   sub1:300, sub2:400, badge:158, cta:75, vp:72, links:262},
+  zh: {h1a:264,   h1b:134,   sub1:146, sub2:278, badge:158, cta:62, vp:64, links:186}
+};
+
+/* Push the current locale into every [data-i18n] node and re-fit the type.
+   The fitter runs afterwards because the hero strings changed length, and the
+   hero's ink widths are re-derived from the new glyphs on every pass. */
+function applyLang(lang, opts){
+  const next = I18N[lang] ? lang : 'en';
+  const changed = next !== LANG;
+  LANG = next;
+  const s = L();
+
+  document.documentElement.lang = next === 'zh' ? 'zh-Hans' : next;
+  document.title = s.docTitle;
+
+  document.querySelectorAll('[data-i18n]').forEach(function(el){
+    const v = s[el.dataset.i18n];
+    if(v != null) el.innerHTML = v;
+  });
+  $('badgeTxt').textContent = s.badge;
+  $('ctaLabel').textContent = s.navCta;
+  $('vpLabel').textContent  = s.heroCta;
+  $('h1a').innerHTML = s.h1a;
+  $('h1b').innerHTML = s.h1b;
+  $('sub1').innerHTML = s.sub1;
+  $('sub2').innerHTML = s.sub2;
+  const wa = document.querySelector('.wa');
+  if(wa) wa.setAttribute('aria-label', s.wa);
+  burger.setAttribute('aria-label', s.burger);
+  hintEl.querySelector('.lbl').textContent = peeked ? s.peekClose : s.peekOpen;
+
+  document.querySelectorAll('#lang button').forEach(function(b){
+    b.setAttribute('aria-pressed', b.dataset.lang === next ? 'true' : 'false');
+  });
+
+  renderStore();
+  if(openProduct) openDetail(openProduct);   /* re-render the open detail in the new locale */
+  if(sheetKind) openSheet(sheetKind);        /* same for an open sheet */
+  if(!$('toast').hidden) showToast();        /* and for the support toast */
+  const sc = $('sheetClose');
+  if(sc) sc.setAttribute('aria-label', s.sheetAria);
+  buildRing();          /* the card copy is baked into the markup, so it must be rebuilt */
+  if(changed || !opts || !opts.silent) layout();
+  if(openProduct) reframe();   /* the stage is sized from the column width */
+}
+
+const cv  = (top, cls, style, html) =>
+  '<div class="cv ' + (cls||'') + '" style="top:' + top + 'px;' + (style||'') + '">' + html + '</div>';
+/* every ring image is decorative: the card's own copy carries the meaning, so
+   the alt is empty rather than a filename or a repeated product name */
+const img = d => '<img class="cut" alt="" src="' + d.u + '">';
+const fill = bg => '<div class="fill" style="background:' + bg + '"></div>';
+
+/* ---- creative(d): every number below is a design pixel inside the 130x300 card ---- */
+function creative(d){
+  switch(d.v){
+
+    case 'pay': return fill('#efedea') +
+      '<div class="ph" style="top:112px;bottom:0">' + img(d) + '</div>' +
+      '<svg class="ph nobg" style="top:118px;bottom:0" viewBox="0 0 130 182" preserveAspectRatio="none" aria-hidden="true">' +
+        '<g stroke="#e5202f" stroke-width="8" fill="none" opacity=".92" stroke-linecap="square">' +
+          '<path d="M2 42h30M14 30v96M4 100l26-16"/>' +
+          '<path d="M96 34v58M120 34v58M96 92q12 15 24 0"/>' +
+          '<path d="M92 108l14 34M126 108l-12 34"/></g></svg>' +
+      cv(20,  '', 'text-align:right;font-size:3.4px;letter-spacing:.15em;color:#6b7076',
+         T({vi:'PHƯƠNG THỨC THANH TOÁN', en:'METHOD OF CHECKOUTS', zh:'支付方式'})) +
+      cv(32, 't-big', 'font-size:14px;color:#16171b', T({vi:'Đặt hàng', en:'Ordering', zh:'下单'})) +
+      cv(47, 't-big', 'font-size:14px;color:#e5202f', T({vi:'Nhanh và dễ', en:'Fast n simple', zh:'快捷简单'})) +
+      cv(76,  '', 'font-size:5.2px;font-weight:700;color:#16171b;line-height:1.7',
+        '<div><b class="dot"></b>' + T({vi:'THANH TOÁN QUA <b>THẺ</b>', en:'PAY BY <b>CARD</b>', zh:'<b>银行卡</b>支付'}) + '</div>' +
+        '<div style="margin-top:8px"><b class="dot sq"></b>' + T({vi:'HOẶC TRẢ GÓP <b>4X</b>', en:'OR SPLIT IN <b>4X</b>', zh:'或分 <b>4</b> 期'}) + '<br>' +
+        '<span style="margin-left:11px">' + T({vi:'KHÔNG LÃI SUẤT', en:'NO INTEREST', zh:'免息'}) + '</span></div>');
+
+    case 'launch': return fill('linear-gradient(168deg,#f7dcc4,#eec39a 55%,#e2ae7f)') +
+      '<div class="ph" style="top:100px;bottom:0">' + img(d) +
+        '<div class="fill" style="background:linear-gradient(180deg,rgba(247,220,196,.97),rgba(247,220,196,0) 30%)"></div>' +
+      '</div>' +
+      cv(36, 't-serif', 'font-size:17px;color:#8a4a16', T({vi:'MẪU MỚI', en:'NEW CASK', zh:'新窖'})) +
+      cv(55, 't-serif', 'font-size:17px;color:#8a4a16', T({vi:'ĐÃ VỀ!', en:'ARRIVED!', zh:'已上市！'}));
+
+    case 'shop': return fill('#fff') +
+      '<div class="ph" style="top:0;height:148px">' + img(d) + '</div>' +
+      cv(158, '', 'font-size:5.4px;font-weight:700;letter-spacing:.09em;color:#16171b',
+         T({vi:'BỘ SÁU CỔ ĐIỂN', en:'THE CLASSIC SIX', zh:'经典六款'})) +
+      cv(168, '', 'font-size:4.2px;color:#7b8087',
+         T({vi:'Lager · Không độ · Chanh · Sữa', en:'Lager · Zero · Lemon · Soda', zh:'拉格 · 无醇 · 柠檬 · 苏打'})) +
+      '<div style="position:absolute;left:10px;top:180px;padding:4px 11px;border-radius:20px;' +
+      'background:#16171b;font-size:4.6px;font-weight:600;color:#fff;letter-spacing:.05em">' +
+      T({vi:'Thêm vào giỏ', en:'Add to crate', zh:'加入购物车'}) + '</div>';
+
+    case 'brand': return fill('linear-gradient(180deg,#07281c,#0a3a26 50%,#04160f)') +
+      '<div class="ph" style="top:92px;bottom:0">' + img(d) +
+        '<div class="fill" style="background:linear-gradient(180deg,rgba(7,40,28,.98),rgba(7,40,28,0) 36%)"></div>' +
+      '</div>' +
+      cv(16, '', 'font-size:4.2px;line-height:1.7;color:rgba(255,255,255,.82);width:74px',
+        T({vi:'Ủ bia với nước suối ngầm Lao Sơn, lúa mạch thượng hạng và men bia ' +
+             'được gìn giữ từ năm 1903.',
+           en:'Brewed with the spring water of Laoshan, northern barley and a strain of ' +
+             'yeast carried down to us since 1903.',
+           zh:'以崂山地下泉水、北方优质麦芽与1903年传承酵母酿造。'})) +
+      '<div style="position:absolute;right:10px;top:16px;font-size:5.4px;font-weight:600;' +
+      'color:#fff;opacity:.92">&#10035; 1903</div>';
+
+    case 'frete': return fill('linear-gradient(158deg,#0d3a5e 0%,#12507f 40%,#1a6fa8 66%,#0a2f4f 100%)') +
+      '<div class="ph" style="top:140px;bottom:0;opacity:.45;mix-blend-mode:screen;padding:0">' + img(d) + '</div>' +
+      fill('radial-gradient(44% 16% at 50% 62%, rgba(255,255,255,.92), rgba(255,255,255,0) 72%)') +
+      '<div style="position:absolute;left:-6px;right:-6px;top:44px;height:13px;background:#ffc23d;' +
+      'transform:rotate(-2.6deg);box-shadow:0 4px 12px rgba(255,194,61,.5)"></div>' +
+      '<div style="position:absolute;left:0;right:0;top:45.5px;transform:rotate(-2.6deg);text-align:center;' +
+      'font-size:5.6px;font-weight:700;letter-spacing:.05em;color:#101a22">' +
+      T({vi:'GIAO LẠNH TẠI NHÀ', en:'DELIVERED COLD AND', zh:'冷链送到家'}) + '</div>' +
+      cv(64, 't-big', 'font-size:24px;color:#fff;text-shadow:0 3px 0 rgba(9,40,64,.6)',
+         T({vi:'Miễn', en:'Ships', zh:'免运费'})) +
+      cv(87, 't-big', 'font-size:24px;color:#fff;text-shadow:0 3px 0 rgba(9,40,64,.6)',
+         T({vi:'Phí', en:'Gratis', zh:'上门'})) +
+      cv(113,'t-big', 'font-size:19px;color:#fff', '+');
+
+    case 'power': return '<div class="ph phf">' + img(d) + '</div>' +
+      fill('linear-gradient(180deg,rgba(4,10,8,0) 34%,rgba(4,10,8,.55) 52%,rgba(4,10,8,.92) 72%)') +
+      cv(132,'t-serif', 'font-size:16px;color:#fff', T({vi:'MỘT THẾ KỶ', en:'A CENTURY', zh:'百年'})) +
+      cv(150,'t-serif', 'font-size:16px;color:#fff', T({vi:'NGHỀ THỦ CÔNG', en:'OF CRAFT', zh:'工艺'})) +
+      cv(171,'', 'font-size:4.4px;letter-spacing:.07em;color:rgba(255,255,255,.85)',
+         T({vi:'trong từng giọt bia', en:'in every bottle we pour', zh:'滴滴匠心'}));
+
+    case 'off': return '<div class="ph phf">' + img(d) + '</div>' +
+      fill('linear-gradient(180deg,rgba(3,9,20,0) 30%,rgba(3,9,20,.6) 48%,rgba(3,9,20,.95) 70%)') +
+      cv(126,'t-big', 'font-size:10px;color:#fff;opacity:.9',
+         T({vi:'Mua nhiều · tới', en:'Multi-buy · til', zh:'多件购 · 至'})) +
+      cv(139,'t-big', 'font-size:22px;color:#f4dfb0;text-shadow:0 0 16px rgba(244,223,176,.5)',
+         T({vi:'Giảm 24%', en:'24% off', zh:'立减 24%'}));
+
+    case 'plain':
+    default: return '<div class="ph phf">' + img(d) + '</div>' +
+      fill('linear-gradient(180deg,rgba(4,8,16,0) 38%,rgba(4,8,16,.85) 68%)') +
+      cv(150,'', 'font-size:5.4px;font-weight:600;letter-spacing:.2em;color:#fff',
+         (d.p && PRODUCT[d.p]) ? PRODUCT[d.p].ringCaption : (d.t || ''));
+  }
+}
+
+/* ================= starfield: two 1px dots, one giant box-shadow list ================= */
+(function starfield(){
+  function build(el, n, blur, lo, hi){
+    const s = [];
+    for(let i=0;i<n;i++){
+      const x = Math.round(Math.random()*10000)/100;
+      const y = Math.round(Math.random()*10000)/100;
+      const a = (lo + Math.random()*(hi-lo)).toFixed(3);
+      s.push(x + 'vw ' + y + 'vh ' + blur + 'px 0 rgba(255,255,255,' + a + ')');
+    }
+    el.style.boxShadow = s.join(',');
+  }
+  build(document.getElementById('stA'), 150, 0,    .05, .30);
+  build(document.getElementById('stB'),  18, 1.2, .35, .70);
+})();
+
+/* every enquiry trigger funnels into the same dialog, so the sales team always
+   receives one schema regardless of where the visitor came from */
+document.addEventListener('click', function(e){
+  const trigger = e.target.closest('[data-lead]');
+  if(!trigger) return;
+  e.preventDefault();
+  if(nav.classList.contains('open')) closeMenu();
+  openLead(trigger.dataset.lead, trigger.dataset.product || null);
+});
+
+/* ================= NAV DESTINATIONS =================
+   Four items, four different shapes of answer, because "Nguồn gốc" and "Hỗ trợ"
+   are not the same kind of request and should not cost the same effort:
+     origin   → a timeline sheet
+     guide    → a how-to sheet
+     range    → the storefront drawer, scrolled to the catalogue
+     support  → a toast with two live links, dismissed on its own
+   Liên hệ keeps the shared lead-form path above. */
+
+/* The official lockup, and the home target for the brand button. */
+$('brandlock').addEventListener('click', function(e){
+  e.preventDefault();
+  if(nav.classList.contains('open')) closeMenu();
+  setPeek(false);
+  closeSheet();
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+$('brandLogo').src = U('_logo');
+
+let sheetReturn = null, sheetLastFocus = null, sheetKind = null;
+
+function openSheet(kind){
+  const data = SHEETS[kind];
+  if(!data) return;
+  const c = data[LANG] || data.en;
+  sheetKind = kind;
+  sheetLastFocus = document.activeElement;
+
+  $('sheetBody').innerHTML =
+    '<p class="sheetkicker">' + esc(c.kick) + '</p>' +
+    '<h2 class="sheettitle" id="sheetTitle">' + esc(c.title) + '</h2>' +
+    '<p class="sheetsub">' + esc(c.sub) + '</p>' +
+    (c.stats ? '<div class="sheetstats">' + c.stats.map(function(s){
+        return '<div><b>' + esc(s[0]) + '</b><span>' + esc(s[1]) + '</span></div>';
+      }).join('') + '</div>' : '') +
+    '<ol class="' + (kind === 'guide' ? 'sheetsteps' : 'sheetlist') + '">' +
+      (kind === 'guide'
+        ? c.steps.map(function(s){
+            return '<li><b>' + esc(s[0]) + '</b><p>' + esc(s[1]) + '</p></li>';
+          }).join('')
+        : c.list.map(function(s){
+            return '<li><b>' + esc(s[0]) + '</b><p>' + esc(s[1]) + '</p></li>';
+          }).join('')) +
+    '</ol>' +
+    '<p class="sheetnote">' + esc(c.note) + '</p>' +
+    '<div class="sheetfoot">' +
+      '<button type="button" class="btn" data-sheet-go="range"><span>' + esc(c.cta) + '</span></button>' +
+      '<button type="button" class="btn sheetghost" data-sheet-go="contact">' + esc(c.cta2) + '</button>' +
+    '</div>';
+
+  $('sheetClose').setAttribute('aria-label', L().sheetAria);
+  $('sheet').hidden = false;
+  sheetReturn = null;
+  setTimeout(function(){ $('sheetClose').focus(); }, 60);
+  document.querySelectorAll('#links a').forEach(function(a){
+    a.setAttribute('aria-current', a.dataset.go === kind ? 'true' : 'false');
+  });
+}
+
+function closeSheet(){
+  if($('sheet').hidden) return;
+  $('sheet').hidden = true;
+  $('sheetBody').innerHTML = '';
+  sheetKind = null;
+  document.querySelectorAll('#links a').forEach(function(a){ a.removeAttribute('aria-current'); });
+  if(sheetLastFocus && sheetLastFocus.focus) sheetLastFocus.focus();
+  sheetLastFocus = null;
+}
+$('sheetClose').addEventListener('click', closeSheet);
+$('sheet').addEventListener('click', function(e){ if(e.target === $('sheet')) closeSheet(); });
+$('sheetBody').addEventListener('click', function(e){
+  const go = e.target.closest('[data-sheet-go]');
+  if(!go) return;
+  const to = go.dataset.sheetGo;
+  closeSheet();
+  if(to === 'contact') openLead('sheet-contact', null);
+  else setPeek(true);
+});
+
+/* Support is deliberately lighter than a dialog: it appears, it answers, it
+   leaves. The bar under the card is the dismiss timer, so the disappearance is
+   explained rather than abrupt. */
+let toastTimer = null;
+function showToast(){
+  const t = $('toast');
+  clearTimeout(toastTimer);
+  t.hidden = false;
+  t.classList.remove('out');
+  /* restart the CSS timer by forcing a reflow between the class swaps */
+  void t.offsetWidth;
+  $('toastPhone').href = 'tel:' + SUPPORT.tel;
+  $('toastPhoneVal').textContent = SUPPORT.phone;
+  $('toastMail').href = 'mailto:' + SUPPORT.email + '?subject=' +
+    encodeURIComponent(SALES.subject.replace('Lead enquiry', 'Support request'));
+  $('toastMailVal').textContent = SUPPORT.email;
+  toastTimer = setTimeout(hideToast, 7000);
+}
+function hideToast(){
+  const t = $('toast');
+  if(t.hidden) return;
+  t.classList.add('out');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.hidden = true; t.classList.remove('out'); }, 320);
+}
+$('toast').addEventListener('click', function(e){
+  if(e.target.closest('a')) return;              // let the links through
+  hideToast();
+});
+
+document.addEventListener('click', function(e){
+  const go = e.target.closest('[data-go]');
+  if(!go) return;
+  e.preventDefault();
+  if(nav.classList.contains('open')) closeMenu();
+  const to = go.dataset.go;
+  if(to === 'range'){
+    closeSheet();
+    setPeek(true);
+    const pb = $('pagebody');
+    if(pb && getComputedStyle(pb).overflowY === 'auto') pb.scrollTop = 0;
+  } else if(to === 'support'){
+    closeSheet();
+    showToast();
+  } else {
+    openSheet(to);
+  }
+});
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') hideToast();
+});
+
+/* Tab must not walk out of an open sheet and back into the page behind it. */
+$('sheet').addEventListener('keydown', function(e){
+  if(e.key !== 'Tab') return;
+  const f = $('sheet').querySelectorAll('button,a[href],[tabindex]:not([tabindex="-1"])');
+  if(!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+});
+
+/* One delegated listener for the whole store: the grid and the detail view are
+   both rebuilt whenever the locale changes, so per-element binding would leak. */
+document.getElementById('pagebody').addEventListener('click', function(e){
+  const card = e.target.closest('.pgcard');
+  if(card){ openDetail(card.dataset.product); return; }
+  if(e.target.closest('[data-back]')){ closeDetail(); return; }
+  const thumb = e.target.closest('.pdthumb');
+  if(thumb){
+    const stage = thumb.closest('.pdmedia').querySelector('.pdstage img');
+    if(stage){ stage.src = U(thumb.dataset.img); matchFrame(stage); }
+    thumb.closest('.pdthumbs').querySelectorAll('.pdthumb')
+      .forEach(function(b){ b.classList.toggle('on', b === thumb); });
+  }
+});
+
+/* ---- frame follows the image ------------------------------------------------
+   The product shots are cut-outs with tight alpha, so a fixed-ratio frame just
+   pads them with empty background. Handing the frame the image's own ratio
+   lets object-fit:contain fill it edge to edge, whatever the bottle or can
+   shape happens to be. It re-runs on load and on every thumbnail swap, so it
+   holds for all 10 products and all 3 locales without any hand-tuned numbers. */
+/* The stage is sized FROM the image, not fitted into a preset box. A 1:3 bottle
+   given a fixed frame either floats in empty beige (93% -> 36% of the frame
+   used) or, given the image's own ratio, grows to 1000px tall. So: take the
+   column's width, derive the height the product actually wants, cap the height
+   so the page stays a sensible length, and let the width follow the cap down.
+   The stage then always fills edge to edge AND never exceeds the cap. */
+/* The cap has to know how much room there is. A fixed 470px fought the CSS
+   max-height on short viewports and won the wrong way: at 390px tall the CSS
+   clamped the JS height from 470 to 304, which broke the ratio and dropped the
+   product back to 72% of its frame (measured on 844x390, 667x375, 320x568).
+   A stage taller than about two thirds of the screen also pushes the specs
+   table off the fold, which defeats the point of having them beside the shot. */
+function stageMaxH(){
+  return Math.max(180, Math.min(470, Math.round(window.innerHeight * 0.62)));
+}
+function matchFrame(img){
+  var box = img.parentNode;
+  if(!box || !img.naturalWidth) return;
+  var col = box.parentNode;
+  var colW = (col && col.clientWidth) || 0;
+  if(!colW) return;                       // not laid out yet; resize will retry
+  var ar = img.naturalWidth / img.naturalHeight;
+  var h = Math.min(colW / ar, stageMaxH());
+  var w = h * ar;
+  box.style.width  = Math.round(w) + 'px';
+  box.style.height = Math.round(h) + 'px';
+}
+/* Detail stages only. The store grid deliberately does NOT get this: ten tiles
+   in a row have to share one frame ratio or the rows go ragged, and the CSS
+   portrait frame already lifts a bottle from 33% fill to 50% on its own. */
+function bindFrames(root){
+  root.querySelectorAll('.pdstage img').forEach(function(im){
+    if(im.dataset.framed) return;
+    im.dataset.framed = '1';
+    if(im.complete && im.naturalWidth) matchFrame(im);
+    else im.addEventListener('load', function(){ matchFrame(im); }, {once:true});
+  });
+}
+
+/* the column resized, so the stage has to be re-derived rather than stretched */
+function reframe(){
+  var im = document.querySelector('#pgdetail .pdstage img');
+  if(im) matchFrame(im);
+}
+
+/* =====================================================================
+   STORE — catalogue grid + product detail.
+   Everything is rendered from CATALOG, so a new SKU only ever has to be added
+   to the data: no markup changes, and the detail page arrives for free.
+   ===================================================================== */
+const esc = s => String(s == null ? '' : s);
+
+function formatSpecs(p){
+  /* the format list is structured data, so the label is composed, not stored */
+  const kind = {
+    bottle:{vi:'chai xanh', en:'green bottle', zh:'绿瓶'},
+    aluminium_bottle:{vi:'chai nhôm', en:'aluminium bottle', zh:'铝瓶'},
+    swing_top_bottle:{vi:'chai nắp gài', en:'swing-top bottle', zh:'木塞瓶'},
+    can:{vi:'lon', en:'can', zh:'易拉罐'},
+    slim_can:{vi:'lon thanh nhã', en:'slim can', zh:'细长罐'}
+  };
+  const join = {vi:' / ', en:' / ', zh:' / '};
+  return (p.specs.formats || []).map(function(f){
+    return esc((kind[f.kind] || {})[LANG] || f.kind) + ' ' + f.volume_ml + 'ml';
+  }).join(join[LANG] || ' / ');
+}
+
+/* =====================================================================
+   LEAD / ENQUIRY FORM
+   A static page cannot send mail on its own, so the destination is one
+   constant. Set `endpoint` to a form service (Formspree, Basin, your own API)
+   and the payload is POSTed as JSON. Left empty, the form falls back to a
+   prefilled mailto: so it still reaches a human without any infrastructure.
+   ===================================================================== */
+const SALES = {
+  email:    'sales@tsingtao.com.vn',   // <- where enquiries should land
+  endpoint: '',                        // <- e.g. 'https://formspree.io/f/xxxxxxx'
+  subject:  'Lead enquiry — Vertex / Tsingtao'
+};
+
+/* The Support item in the nav is a single tap, so these two values are the whole
+   feature: they render as live tel: and mailto: links inside the toast. Hours are
+   the only part that varies by language, so they live in I18N. */
+const SUPPORT = {
+  phone: '1900 2028',                  // <- replace with the real hotline
+  email: 'hotline@tsingtao.com.vn',    // <- replace with the real support inbox
+  tel:   '19002028'                    // <- dialled form, digits only
+};
+
+/* =====================================================================
+   EDITORIAL SHEETS — the bodies behind Nguồn gốc and Hướng dẫn. Kept beside
+   the catalogue rather than in I18N because they are content, not chrome, and
+   they are long. Facts are drawn from the brand's own published history.
+   ===================================================================== */
+const SHEETS = {
+  origin:{
+    vi:{ kick:'Câu chuyện', title:'Từ một nhà máy nhỏ bên bờ vịnh Lạc Đôn, năm 1903',
+         sub:'Năm 1903, Tsingtao ra đời tại Thanh Đảo với công nghệ ủ bia Đức và một dòng nước suối dưới chân núi Lao Sơn. Một trăm năm sau, công thức ấy vẫn chạy mỗi ngày.',
+         stats:[['1903','Năm thành lập'],['100+','Thị trường trên thế giới'],['2','Huy chương uy tín']],
+         list:[['1903 · Khởi đầu','Một nhóm thương gia Đức và Anh mở nhà máy tại Thanh Đảo, bên bờ vịnh Lạc Đôn. Mẻ bia đầu tiên được ủ theo phương pháp Đức — một quyết định định hình toàn bộ hương vị của Tsingtao về sau.'],
+               ['1920s · Mở rộng','Dây chuyền hiện đại hoá dần theo tiêu chuẩn châu Âu, nhưng ba nguyên liệu cốt lõi không đổi: nước suối ngầm Lao Sơn, lúa mạch thượng hạng và hoa bia tươi.'],
+               ['2003 · Trăm năm','Để kỷ niệm một thế kỷ, nhà máy tung ra phiên bản Centennial Journey — 750 ml, chai thủy tinh nâu, nắp gài kiểu châu Ân: một thế kỷ nghệ thuật nấu bia đóng trong một chai.'],
+               ['Hôm nay · Tại Việt Nam','Dòng sản phẩm tại Việt Nam được ủ lạnh và ủ trong 12 tháng, phân phối từ nhà máy đến tay người tiêu dùng trong cùng một chuỗi lạnh. Bảy dòng sản phẩm, từ lager truyền thống đến nước soda tảo biển không đường.'],
+               ['Ghi nhận','Huy chương Vàng World Beer Championship tại Mỹ và giải European Beer Star tại Đức — hai danh hiệu do bên thứ ba trao tặng, không phải tuyên bố của chính nhà máy.']],
+         note:'Công thức gốc năm 1903 chưa từng bị viết lại. Nó chỉ được giữ cho đúng, và tiếp tục được giữ.',
+         cta:'Xem dòng sản phẩm', cta2:'Liên hệ với chúng tôi' },
+    en:{ kick:'Our story', title:'From a small brewery on the shore of Jiaozhou Bay, 1903',
+         sub:'Tsingtao began in Qingdao in 1903, built on German brewing technology and a line of spring water beneath Mount Laoshan. A century later, that recipe still runs every day.',
+         stats:[['1903','Year founded'],['100+','Markets worldwide'],['2','International medals']],
+         list:[['1903 · The beginning','A group of German and British merchants opened a brewery in Qingdao, on the shore of Jiaozhou Bay. The first brew followed the German method — a decision that shaped the flavour of everything Tsingtao has made since.'],
+               ['1920s · Modernising','The line was progressively brought up to European standards, while three core ingredients never changed: Laoshan spring water, premium barley malt and fresh hops.'],
+               ['2003 · One hundred years','To mark the centenary, the brewery released Centennial Journey — 750 ml, brown crystal, European-style swing-top: a century of brewing craft sealed in one bottle.'],
+               ['Today · In Vietnam','The Vietnamese range is cold-conditioned and matured for twelve months, travelling from the brewery to the customer inside one continuous cold chain. Seven lines, from the heritage lager through to sugar-free seaweed soda.'],
+               ['Recognition','World Beer Championship Gold Medal in the United States and the European Beer Star in Germany — two awards conferred by third parties, not claimed by the brewery.']],
+         note:'The original 1903 formula has never been rewritten. It has only been kept, and kept being kept.',
+         cta:'See the product range', cta2:'Talk to us' },
+    zh:{ kick:'品牌故事', title:'1903 年，胶州湾畔的一家小酒厂',
+         sub:'1903 年，青岛啤酒在青岛创立，依托德国酿造技术与崂山山泉。四十年过去，这份配方至今仍每日运转。',
+         stats:[['1903','创立年份'],['100+','全球市场'],['2','国际奖项']],
+         list:[['1903 · 起点','一批德国与英国商人在青岛胶州湾畔开设酒厂。首缸酒液依照德国工艺酿造——这一决定塑造了此后青岛啤酒的全部风味走向。'],
+               ['1920s · 现代化','生产线逐步对标欧洲标准，而三样核心原料始终未变：崂山地下泉水、优质大麦麦芽与新鲜啤酒花。'],
+               ['2003 · 百年','为纪念百年，酒厂推出百年纪念版——750 毫升，棕色水晶瓶身，欧式木塞封口：把一个世纪的酿造工艺封印在一只瓶中。'],
+               ['今天 · 在越南','越南系列全程冷链冷藏熟成 12 个月，从酒厂直达消费者。七条产品线，从经典拉格到无糖海藻苏打水。'],
+               ['荣誉','美国世界啤酒锦标赛金奖与德国欧洲啤酒之星——两项由第三方授予的奖项，而非酒厂自述。']],
+         note:'1903 年的原始配方从未被改写，它只是一直被保留下去。',
+         cta:'查看产品系列', cta2:'联系我们' }
+  },
+  guide:{
+    vi:{ kick:'Cách thưởng thức', title:'Ba bước để uống đúng, và vì sao chúng quan trọng',
+         sub:'Một chai bia ngon không tự nói lên điều đó. Nhiệt độ, cách rót và khoảnh khắc bạn nếm thay đổi hoàn toàn những gì bạn cảm nhận được.',
+         steps:[['Lạnh đúng điểm','Bảo quản ở 4–8°C, lấy ra tủ lạnh vài phút trước khi mở. Nhiệt độ thấp quá làm bọt bị chết và vị hoa bia bị bịt; quá ấm thì mạch nha nổi lên và che mất hương thơm. Giữa hai ngưỡng đó là lúc dòng lager tỏa ra đúng mùi.'],
+                ['Rót xuống thành ly','Nghiêng ly khoảng 45 độ, rót chậm dọc theo thành trong khoảng hai phần ba đầu, rồi mới dựng thẳng phần cuối. Cách rót này tạo lớp bọt dày và mịn thay vì đẹp nhưng mỏng — và bọt chính là nơi giữ lại hương thơm bay lên.'],
+                ['Nếm theo thứ tự','Ngụm đầu tiên, hãy ngửi trước khi uống: mạch nha, rồi hoa bia, rồi độ chua sạch ở hậu vị. Ăn kèm món ăn để các tầng hương đó mở ra theo đúng thứ tự thay vì chồng lên nhau.'],
+                ['Giữ lạnh đến cuối','Đừng để chai đứng ngoài quá 20 phút. Nhiệt độ tăng sẽ đẩy khí ra khỏi bia và làm vị chua ở cuối nổi lên rõ hơn — thứ vị chua mà một chai bia tốt không nên có.']],
+         note:'Dòng Trăm Năm và dòng 1903 được thiết kế để uống chậm hơn. Đừng vội — hãy để chai ngồi yên và tự mở nắp gài.',
+         cta:'Xem dòng sản phẩm', cta2:'Liên hệ với chúng tôi' },
+    en:{ kick:'How to enjoy', title:'Three steps that make the difference',
+         sub:'A good bottle does not announce itself. Temperature, the pour, and the moment you taste it change almost everything you actually perceive.',
+         steps:[['Get the temperature right','Keep it at 4–8°C and take it out of the fridge a few minutes before opening. Too cold kills the head and flattens the hop aroma; too warm lets the malt come forward and bury the fragrance. Between those two thresholds is where a lager opens up properly.'],
+                ['Pour down the wall','Tilt the glass to about 45 degrees and pour slowly along the side for the first two-thirds, then straighten for the last third. This builds a thick, creamy head instead of a thin attractive one — and the head is where the aroma is held.'],
+                ['Taste in order','On the first sip, smell before you drink: malt, then hops, then the clean sharpness in the finish. Eat alongside, and those layers arrive in order rather than all at once.'],
+                ['Keep it cold to the end','Do not let the bottle stand out for more than 20 minutes. The warmth pushes the gas off and lets a sour edge surface — the one note a well-made beer should not have.']],
+         note:'The Centennial and 1903 Reserve are built to be drunk slowly. Do not rush them — let the bottle sit and open the closure in its own time.',
+         cta:'See the product range', cta2:'Talk to us' },
+    zh:{ kick:'品鉴指南', title:'三步喝出本来的味道',
+         sub:'好酒不会自己开口。温度、倒法与品尝的瞬间，几乎决定了你真正感受到的一切。',
+         steps:[['温度要准','4–8°C 保存，开瓶前从冰箱取出静置数分钟。太冷会压掉泡沫、封住啤酒花香气；太温则麦芽前冲、掩去芬芳。两者之间的区间，才是拉格真正舒展开的地方。'],
+                ['沿杯壁倒','杯身倾斜约 45 度，前三分之二沿杯壁缓缓注入，最后三分之一再立直。这样倒出的是厚实绵密的泡沫，而不是好看却单薄的一层——香气正是锁在泡沫里。'],
+                ['按顺序品尝','第一口先闻再喝：麦芽在前，啤酒花居中，收尾是干净利落的清爽。佐餐同食，让这些层次依次展开，而不是混成一团。'],
+                ['全程保持冰凉','不要让啤酒在室温下放置超过 20 分钟。温度上升会把气体推走，也让尾段浮出一丝酸涩——那是一款好啤酒不该有的味道。']],
+         note:'百年纪念与 1903 尊享，都为慢饮而生。别急，让它静置片刻，自行开启瓶封。',
+         cta:'查看产品系列', cta2:'联系我们' }
+  }
+};
+
+const LEAD_FIELDS = [
+  {name:'name',    type:'text',     label:'fName',    req:true,  ph:'fNamePh',  ac:'name'},
+  {name:'phone',   type:'tel',      label:'fPhone',   req:true,  ph:'',        ac:'tel'},
+  {name:'email',   type:'email',    label:'fEmail',   req:true,  ph:'',        ac:'email'},
+  {name:'company', type:'text',     label:'fCompany', req:false, ph:'fCompanyPh'},
+  {name:'role',    type:'select',   label:'fRole',    req:false, ac:'fRole'},
+  {name:'product', type:'select',   label:'fProduct', req:true,  ac:'product'},
+  {name:'qty',     type:'text',     label:'fQty',     req:false, ph:'',        ac:'fQty'},
+  {name:'address', type:'text',     label:'fAddress', req:false, ph:'fAddressPh', wide:true},
+  {name:'note',    type:'textarea', label:'fNote',    req:false, ph:'fNotePh',  wide:true}
+];
+
+const leadForm = $('leadForm'), leadGrid = $('leadGrid');
+let leadReturn = null, leadLastFocus = null;
+
+function options(key, extra){
+  const s = L();
+  let html = '';
+  if(extra) html += '<option value="">' + esc(s.pick) + '</option>';
+  if(key === 'fRole')
+    html += ['roleCustomer','roleReseller','roleRetail','roleHoReCa','roleOther']
+      .map(function(k){ return '<option value="' + k + '">' + esc(s[k]) + '</option>'; }).join('');
+  if(key === 'product')
+    html += BY_ORDER.map(function(p){
+      return '<option value="' + p.id + '">' + esc((p.copy[LANG] || p.copy.en).name) + '</option>';
+    }).join('');
+  return html;
+}
+
+function renderLead(){
+  leadGrid.innerHTML = LEAD_FIELDS.map(function(f){
+    const s = L(), wide = f.wide ? ' wide' : '';
+    const lab = esc(s[f.label]) + (f.req ? '<em>*</em>' : '');
+    let ctrl;
+    if(f.type === 'select')
+      ctrl = '<select id="lf-' + f.name + '" name="' + f.name + '"' +
+             (f.req ? ' required aria-required="true"' : '') + '>' + options(f.ac, f.req) + '</select>';
+    else if(f.type === 'textarea')
+      ctrl = '<textarea id="lf-' + f.name + '" name="' + f.name + '"' +
+             (f.req ? ' required aria-required="true"' : '') + ' placeholder="' + esc(s[f.ph]) + '"></textarea>';
+    else
+      ctrl = '<input id="lf-' + f.name + '" name="' + f.name + '" type="' + f.type + '"' +
+             (f.req ? ' required aria-required="true"' : '') +
+             (f.ac && f.type === 'text' ? ' autocomplete="' + f.ac + '"' : '') +
+             (f.ph ? ' placeholder="' + esc(s[f.ph]) + '"' : '') + '>';
+    return '<label class="leadfield' + wide + '"><span>' + lab + '</span>' + ctrl + '</label>';
+  }).join('');
+  document.getElementById('leadErr').textContent = '';
+}
+
+function openLead(source, productId){
+  renderLead();
+  leadForm.hidden = false;
+  document.getElementById('leadDone').hidden = true;
+  document.querySelector('.leadactions').hidden = false;
+  document.querySelector('.leadcheck').hidden = false;
+  $('leadSubmit').disabled = false;
+  document.getElementById('leadConsent').checked = false;
+  if(productId){ const sel = $('lf-product'); if(sel) sel.value = productId; }
+  leadReturn = source || null;
+  leadLastFocus = document.activeElement;
+  setTimeout(function(){ const f = $('lf-name'); if(f) f.focus(); }, 60);
+}
+
+function closeLead(){
+  leadForm.hidden = true;
+  if(leadLastFocus && leadLastFocus.focus) leadLastFocus.focus();
+  leadLastFocus = null;
+}
+
+$('leadClose').addEventListener('click', closeLead);
+$('leadClose2').addEventListener('click', closeLead);
+leadForm.addEventListener('click', function(e){ if(e.target === leadForm) closeLead(); });
+
+/* keep Tab inside the dialog while it is open */
+leadForm.addEventListener('keydown', function(e){
+  if(e.key !== 'Tab') return;
+  const f = [].filter.call(leadForm.querySelectorAll('input,select,textarea,button'),
+    function(el){ return !el.disabled && el.offsetParent !== null; });
+  if(!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+});
+
+const RE_PHONE = /^[+]?[\d\s().-]{8,20}$/;
+const RE_MAIL  = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+leadForm.addEventListener('submit', function(e){
+  e.preventDefault();
+  const s = L(), err = $('leadErr');
+  const set = function(el, bad){ el.setAttribute('aria-invalid', bad ? 'true' : 'false'); return !bad; };
+  let ok = true, firstBad = null;
+  const fail = function(msg, el){
+    if(ok) firstBad = el;
+    err.textContent = msg; ok = false; set(el, true);
+  };
+
+  const name = $('lf-name'), phone = $('lf-phone'), mail = $('lf-email'),
+        prod = $('lf-product'), consent = $('leadConsent');
+
+  [name, phone, mail, prod].forEach(function(el){ el.removeAttribute('aria-invalid'); });
+  consent.removeAttribute('aria-invalid');
+
+  if(!name.value.trim())               fail(s.rName, name);
+  else ok = ok && set(name, false);
+  if(!phone.value.trim())              fail(s.rPhone, phone);
+  else if(!RE_PHONE.test(phone.value)) fail(s.rPhoneFmt, phone);
+  else ok = ok && set(phone, false);
+  if(!mail.value.trim())               fail(s.rEmail, mail);
+  else if(!RE_MAIL.test(mail.value))   fail(s.rEmailFmt, mail);
+  else ok = ok && set(mail, false);
+  if(!prod.value)                      fail(s.rProduct, prod);
+  else ok = ok && set(prod, false);
+  if(!consent.checked)                 fail(s.rConsent, consent);
+  else consent.removeAttribute('aria-invalid');
+
+  if(!ok){ err.textContent = err.textContent; if(firstBad) firstBad.focus(); return; }
+
+  const data = {};
+  LEAD_FIELDS.forEach(function(f){ data[f.name] = ($('lf-' + f.name).value || '').trim(); });
+  data.consent = true;
+  data.locale  = LANG;
+  data.source  = leadReturn || 'unknown';
+  data.sku     = (PRODUCT[data.product] || {}).sku || '';
+  data.page    = location.href;
+
+  const body = [
+    'Họ tên / Name      : ' + data.name,
+    'Điện thoại / Phone : ' + data.phone,
+    'Email              : ' + data.email,
+    'Công ty / Company  : ' + data.company,
+    'Loại hình / Type   : ' + data.role,
+    'Sản phẩm / Product : ' + ((PRODUCT[data.product] || {}).copy[LANG] || {}).name,
+    'SKU                : ' + data.sku,
+    'Số lượng / Qty     : ' + data.qty,
+    'Địa chỉ / Address  : ' + data.address,
+    'Ghi chú / Note     : ' + data.note,
+    'Nguồn / Source     : ' + data.source,
+    'Ngôn ngữ / Locale  : ' + data.locale,
+    'Trang / Page       : ' + data.page
+  ].join('\n');
+
+  const btn = $('leadSubmit');
+  btn.disabled = true;
+  const mailto = 'mailto:' + SALES.email +
+    '?subject=' + encodeURIComponent(SALES.subject) +
+    '&body=' + encodeURIComponent(body);
+
+  /* Confirmation is shown either way. With no endpoint configured we also hand
+     the visitor a pre-filled mailto LINK and let them press send — silently
+     navigating the page to mailto: is unreliable inside a frame and would
+     otherwise strand the message. */
+  const done = function(){
+    document.querySelector('.leadactions').hidden = true;
+    document.querySelector('.leadcheck').hidden = true;
+    const mail = $('leadMail');
+    mail.href = mailto;
+    mail.hidden = !!SALES.endpoint;      // the POST already delivered it
+    $('leadSent').textContent = SALES.endpoint ? '' : (SALES.email + ' · ' + L().leadMailTo);
+    document.getElementById('leadDone').hidden = false;
+    document.getElementById('leadClose2').focus();
+  };
+
+  if(!SALES.endpoint){ done(); return; }
+
+  fetch(SALES.endpoint, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body: JSON.stringify(data)
+  }).then(function(r){ if(!r.ok) throw new Error(r.status); return r; })
+    .then(done)
+    .catch(function(){
+      btn.disabled = false;
+      done();                            // never lose the enquiry
+    });
+});
+
+function renderStore(){
+  const banner = document.getElementById('bannerImg');
+  if(banner) banner.src = U('banner');
+
+  document.getElementById('pggrid').innerHTML = GOODS.map(function(id){
+    const p = PRODUCT[id], c = p.copy[LANG] || p.copy.en;
+    return '<button type="button" class="pgcard" data-product="' + p.id + '" lang="' + LANG + '">' +
+      '<span class="ph"><img alt="Tsingtao ' + esc(c.name) + '" src="' + U(p.media.tile) + '">' +
+      '<span class="tag">' + esc(c.badge) + '</span>' +
+      '<span class="go" aria-hidden="true"></span></span>' +
+      '<b>' + esc(c.name) + '</b>' +
+      '<i>' + esc(formatSpecs(p)) + ' · ' + p.specs.abv.toFixed(1) + '%</i>' +
+      '</button>';
+  }).join('');
+
+  document.querySelectorAll('.pgcard img').forEach(function(im){
+    if(im.dataset.bound) return;
+    im.dataset.bound = '1';
+    im.addEventListener('error', function(){ im.style.visibility = 'hidden'; });
+  });
+  bindFrames(document.getElementById('pagebody'));
+  const n = CATALOG.products.length;
+  const cnt = $('secCount');
+  if(cnt) cnt.textContent = L().count.replace('{n}', n);
+}
+
+/* ---- product detail ---- */
+let openProduct = null;
+
+function openDetail(id){
+  const p = PRODUCT[id];
+  if(!p) return;
+  openProduct = id;
+  const c = p.copy[LANG] || p.copy.en, s = p.specs, host = $('pgdetail');
+  const spec = (label, val) => val ? '<div class="row"><b>' + label + '</b><span>' + val + '</span></div>' : '';
+
+  host.innerHTML =
+    '<button type="button" class="pdback" data-back>' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" ' +
+      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>' +
+      esc(L().backToCatalog) + '</button>' +
+    '<div class="pdwrap">' +
+      '<div class="pdmedia">' +
+        '<div class="pdstage"><img alt="Tsingtao ' + esc(c.name) + '" src="' + U(p.media.gallery[0]) + '">' +
+        '<span class="tag">' + esc(c.badge) + '</span></div>' +
+        (p.media.gallery.length > 1
+          ? '<div class="pdthumbs">' + p.media.gallery.map(function(g, i){
+              return '<button type="button" class="pdthumb' + (i ? '' : ' on') + '" ' +
+                'data-img="' + g + '" aria-label="' + esc(c.name) + ' ' + (i + 1) + '">' +
+                '<img alt="" src="' + U(g) + '"></button>';
+            }).join('') + '</div>'
+          : '') +
+      '</div>' +
+      '<div class="pdinfo" lang="' + LANG + '">' +
+        '<u class="pdline">' + esc(p.line[LANG] || p.line.en) + '</u>' +
+        '<h3 class="pdname">' + esc(c.name) + '</h3>' +
+        '<p class="pdtagline">' + esc(c.tagline) + '</p>' +
+        /* the one sentence worth remembering, set apart from the description */
+        (c.legacy ? '<blockquote class="pdlegacy">' + esc(c.legacy) + '</blockquote>' : '') +
+        '<div class="pdspecs">' +
+          spec(L().specAbv, p.specs.abv.toFixed(1) + '%') +
+          spec(L().specFormat, esc(formatSpecs(p))) +
+          spec(L().specTech, s.fermentation ? esc(s.fermentation[LANG] || s.fermentation.en) : '') +
+          spec(L().specEnergy, s.energy_kcal_100ml == null ? '' : s.energy_kcal_100ml + ' kcal / 100ml') +
+          spec(L().specDiet, [s.sugar_free ? L().dietSugarFree : '',
+                              s.low_calorie ? L().dietLowCal : '',
+                              s.keto ? L().dietKeto : ''].filter(Boolean).join(' · ')) +
+          spec(L().specIngredients, esc(s.ingredients[LANG] || s.ingredients.en)) +
+        '</div>' +
+        /* the blank line in the copy is a real paragraph break, not a stray \n */
+        String(c.description).split(/\n\s*\n/).map(function(par){
+          return '<p class="pddesc">' + esc(par) + '</p>';
+        }).join('') +
+        '<div class="pdblock"><b>' + esc(L().keyFeatures) + '</b><ul>' +
+          c.features.map(function(f){ return '<li>' + esc(f) + '</li>'; }).join('') + '</ul></div>' +
+        '<div class="pdblock"><b>' + esc(L().foodPairing) + '</b><ul class="chips">' +
+          c.pairing.map(function(f){ return '<li>' + esc(f) + '</li>'; }).join('') + '</ul></div>' +
+        /* third-party recognition, rendered only where it genuinely exists */
+        (c.award ? '<p class="pdaward"><i aria-hidden="true"></i>' +
+          esc(c.award[LANG] || c.award.en) + '</p>' : '') +
+        '<a class="btn pdcta" href="#" data-lead="product-cta" data-product="' + p.id + '">' +
+          '<span>' + esc(c.cta) + '</span></a>' +
+      '</div>' +
+    '</div>';
+
+  document.getElementById('pagebody').classList.add('detail');
+  bindFrames(host);          /* the stage takes its ratio from whichever image is showing */
+  if(!peeked) setPeek(true);
+}
+
+function closeDetail(){
+  if(!openProduct) return;
+  openProduct = null;
+  $('pgdetail').innerHTML = '';
+  document.getElementById('pagebody').classList.remove('detail');
+}
+
+/* =====================================================================
+   THE RING — 37 cards on a cylinder with the camera AT the ring centre.
+   R = 891 = perspective, so each card is tangent to the cylinder and faces
+   the camera exactly; the vertical sides with a slanted top edge is genuine
+   PERSPECTIVE, not rotation. step = 360/37 = 9.7297deg, cull = 42deg.
+   ===================================================================== */
+const R = 891, PERSP = 891, N = 37, CULL = 42, SPEED = 1.9;
+const STEP = 360 / N, PLANE_Y = 616, HORIZON_Y = 918;
+let phase = -2, last = 0, cards = [];
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+function buildRing(){
+  const ring = document.getElementById('ring');
+  let html = '';
+  for(let i=0;i<N;i++){
+    const d = SHOTS[i % SHOTS.length];
+    html += '<div class="card">' + creative(d) + '<div class="edge"></div></div>';
+  }
+  ring.innerHTML = html;
+  cards = Array.prototype.slice.call(ring.children);
+  cards.forEach(function(c){
+    const im = c.querySelector('img');
+    if(im && !im.dataset.bound){
+      im.dataset.bound = '1';
+      im.addEventListener('error', function(){ c.classList.add('broken'); });
+    }
+  });
+  placeCards();
+}
+
+function placeCards(){
+  for(let i=0;i<cards.length;i++){
+    const el = cards[i];
+    const a = ((i*STEP + phase) % 360 + 540) % 360 - 180;   // signed angle -180..180
+    if(Math.abs(a) > CULL){ el.style.visibility = 'hidden'; continue; }
+    el.style.visibility = 'visible';
+    const r = a * Math.PI/180, c = Math.cos(r);
+    el.style.transform =
+      'translate3d(' + (R*Math.sin(r)).toFixed(2) + 'px,0,' + (R*(1-c)).toFixed(2) + 'px) rotateY(' + (-a).toFixed(3) + 'deg)';
+    el.style.filter = 'brightness(' + (0.84 + 0.5*(1/c - 1)).toFixed(3) + ')';
+  }
+}
+
+function tick(t){
+  if(!last) last = t;
+  const dt = Math.min((t - last)/1000, .1);      // clamp so a janky frame can't leap
+  last = t;
+  if(!reduced.matches) phase -= SPEED * dt;      // continuous, never resets
+  placeCards();
+  requestAnimationFrame(tick);
+}
+/* a backgrounded tab must not jump forward when it comes back */
+document.addEventListener('visibilitychange', function(){ last = 0; });
+reduced.addEventListener && reduced.addEventListener('change', placeCards);
+
+/* =====================================================================
+   THE TYPE FITTER — desktop + tablet only.
+   Font metrics are read from a detached canvas 2D context so the result is
+   exact whatever face actually loads.
+   ===================================================================== */
+const cv2 = document.createElement('canvas').getContext('2d');
+const TAB_MAX = 1080, TAB_MIN = 701, DW_MIN = 920;
+const CW = 1172;                                   // desktop design width
+let k = 1, isPhone = false, isTablet = false, tboost = 1;
+
+const FIT = [$('h1a'), $('h1b'), $('sub1'), $('sub2'), $('badgeTxt'),
+            $('ctaLabel'), $('vpLabel')];
+
+function fontOf(el){
+  const cs = getComputedStyle(el);
+  return {css: cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily,
+          size: parseFloat(cs.fontSize)};
+}
+/* cap height per 1px of font-size, measured on a real 'H' at 100px */
+function capRatio(el){
+  const f = fontOf(el);
+  cv2.font = f.css.replace(f.size + 'px', '100px');
+  const m = cv2.measureText('H');
+  return (m.actualBoundingBoxAscent || 70) / 100;
+}
+/* design-pixel width: the canvas is scaled by k, so undo that */
+function inkWidth(el){ return el.getBoundingClientRect().width / (isPhone ? 1 : k); }
+
+function fitBox(el, tw, tc, pre){
+  el.style.transform = pre || '';
+  el.style.fontSize = (tc / capRatio(el)) + 'px';
+  el.style.transform = (pre || '') + ' scaleX(' + (tw / inkWidth(el)) + ')';
+}
+function baseline(el, y){
+  const f = fontOf(el);
+  cv2.font = f.css;
+  const m = cv2.measureText('Hg');
+  const A = m.fontBoundingBoxAscent  || f.size * .8;
+  const D = m.fontBoundingBoxDescent || f.size * .2;
+  el.style.top = (y - ((f.size - (A + D)) / 2 + A)) + 'px';
+}
+/* optical centring: put a zero-size inline probe INSIDE the label so it rides the
+   span's own baseline, read that baseline off the button, then offset the label
+   so its CAP sits at the middle (BIAS 1.1 — the reference sits ~0.6px low) */
+function centreLabel(btn, el, capPx){
+  const probe = document.createElement('i');
+  probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+  el.appendChild(probe);
+  const base = (probe.getBoundingClientRect().top - btn.getBoundingClientRect().top) / (isPhone ? 1 : k);
+  el.removeChild(probe);
+  el.style.top = (btn.offsetHeight/2) - (base - capPx/2) + 1.1 + 'px';
+}
+
+function layout(){
+  if(isPhone){
+    /* hand back EVERY inline style the fitter wrote, so resizing down from a
+       desktop width cannot leave a stray transform shifting the headline off-screen */
+    FIT.forEach(function(el){
+      el.style.fontSize = ''; el.style.top = ''; el.style.transform = '';
+    });
+    const links = $('links');
+    links.style.transform = ''; links.style.fontSize = '';
+    Array.prototype.forEach.call(links.children, function(a){ a.style.fontSize = ''; });
+    document.querySelectorAll('.cta2 span, .nav .btn span').forEach(function(s){ s.style.top = ''; });
+    placeCards();
+    return;
+  }
+
+  const I = INK[LANG] || INK.en;
+  const T_ = tboost;
+  fitBox($('h1a'), I.h1a*T_, 37.2*T_, 'translateX(-50%)'); baseline($('h1a'), 204.5);
+  fitBox($('h1b'), I.h1b*T_, 37.2*T_, 'translateX(-50%)'); baseline($('h1b'), 258.5);
+  fitBox($('sub1'), I.sub1*T_,  8.4*T_, 'translateX(-50%)'); baseline($('sub1'), 300.5);
+  fitBox($('sub2'), I.sub2*T_,  8.4*T_, 'translateX(-50%)'); baseline($('sub2'), 316.5);
+  fitBox($('badgeTxt'), I.badge*T_, 12*T_);
+  fitBox($('ctaLabel'), I.cta*T_, 8.9*T_); centreLabel($('ctaLabel').parentNode, $('ctaLabel'),  8.9*T_);
+  fitBox($('vpLabel'),  I.vp*T_,  9.5*T_); centreLabel($('vpLabel').parentNode,  $('vpLabel'),   9.5*T_);
+
+  const links = $('links');
+  links.style.transform = '';
+  if(isTablet){
+    Array.prototype.forEach.call(links.children, function(a){ a.style.fontSize = ''; });
+  }else{
+    // one shared size for all five, derived from the first child's cap ratio
+    const fs = 7.9 / capRatio(links.firstElementChild);
+    Array.prototype.forEach.call(links.children, function(a){ a.style.fontSize = fs + 'px'; });
+    const rowW = links.getBoundingClientRect().width / k;
+    links.style.transform = 'scaleX(' + (I.links / rowW) + ')';
+  }
+  placeCards();
+}
+
+/* =====================================================================
+   RESPONSIVE — three distinct architectures.
+   Scale law: k = min(vw/W, vh/560). 560 (not 657) is the height divisor on
+   purpose: it fills the width and lets the browser mock bleed off the
+   bottom edge rather than letterboxing the composition.
+   ===================================================================== */
+const canvas = $('canvas');
+/* declared up here, not beside the drawer code: the entrance timeline runs
+   before that block and touches the hint element */
+const stage = $('stage'), mockEl = $('browser'), hintEl = $('peekhint');
+let peeked = false, wheelLock = 0;
+function resize(){
+  const vw = window.innerWidth, vh = window.innerHeight;
+  isPhone   = vw <= 700;
+  isTablet  = !isPhone && vw <= TAB_MAX;
+  tboost    = 1;
+
+  if(isPhone){
+    k = 1;
+    canvas.style.removeProperty('--k');
+    canvas.style.removeProperty('--fill');
+  }else{
+    let W = CW;
+    if(isTablet){
+      // narrow the design WINDOW so type stops shrinking with the viewport,
+      // while k stays CONTINUOUS at 1080 (no visible jump across the breakpoint)
+      W = DW_MIN + (vw - TAB_MIN) * (CW - DW_MIN) / (TAB_MAX - TAB_MIN);
+      if(vh > vw*1.15) W = Math.min(W, 900);          // portrait tablet: read larger
+    }
+    k = Math.min(vw / W, vh / 560);
+    canvas.style.setProperty('--k', k);
+
+    let fill = Math.max(0, vh/k - 657);
+    if(isTablet && fill > 0){
+      // share the surplus height THREE ways
+      const ramp  = Math.min(1, (TAB_MAX - vw) / 120);   // ease the change in over 120px
+      tboost      = 1 + 0.14 * ramp;                     // ink-target multiplier for type
+      const ss    = Math.min(fill*0.55, 420) * ramp;      // wheel + mock travel to the foot
+      const rs    = 1 + Math.min(fill/1100, 0.75) * ramp;// wheel grows = a closer camera
+      const slack = 219.5 - 125*rs + ss;
+      const st    = Math.max(0, slack/2 - 28) * ramp;     // hero drops to sit centred
+      fill       -= ss;                                  // mock keeps only what's left
+      canvas.style.setProperty('--sshift', ss + 'px');
+      canvas.style.setProperty('--rs', rs);
+      canvas.style.setProperty('--stshift', st + 'px');
+    }else{
+      canvas.style.setProperty('--sshift', '0px');
+      canvas.style.setProperty('--rs', 1);
+      canvas.style.setProperty('--stshift', '0px');
+    }
+    canvas.style.setProperty('--fill', fill + 'px');
+  }
+  layout();
+  if(peeked) setPeek(true, true);      /* keep the drawer correct across resizes */
+  if(vw <= 1080) closeMenu(true);
+}
+
+addEventListener('resize', resize);
+if(window.visualViewport) visualViewport.addEventListener('resize', resize);
+
+/* ================= narrow-viewport menu ================= */
+const nav = $('nav'), burger = $('burger');
+function closeMenu(silent){
+  if(!nav.classList.contains('open')) return;
+  nav.classList.remove('open');
+  burger.setAttribute('aria-expanded','false');
+  if(!silent) burger.focus();
+}
+burger.addEventListener('click', function(){
+  const open = nav.classList.toggle('open');
+  burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+document.addEventListener('click', function(e){
+  if(nav.classList.contains('open') && !nav.contains(e.target)) closeMenu();
+});
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' && nav.classList.contains('open')) closeMenu();
+});
+$('navmenu').addEventListener('click', function(e){
+  if(e.target.closest('a')) closeMenu();
+});
+/* remember the locale, but a storage failure must never break the page */
+$('lang').addEventListener('click', function(){
+  try{ localStorage.setItem('vertex-lang', LANG); }catch(err){}
+});
+
+/* =====================================================================
+   MASTER ENTRANCE TIMELINE — runs exactly once, then the page is still.
+   ===================================================================== */
+(function intro(){
+  const root = document.documentElement;
+  function settle(){
+    document.getAnimations().forEach(function(a){
+      if(a.id && a.id.indexOf('intro:') === 0) a.cancel();
+    });
+    root.classList.remove('intro');
+  }
+  if(!root.classList.contains('intro') ||
+     matchMedia('(prefers-reduced-motion: reduce)').matches ||
+     !Element.prototype.animate){ settle(); return; }
+
+  const D    = innerWidth <= 700 ? .66 : 1;          // phones travel shorter distances
+  const EXPO = 'cubic-bezier(.16,1,.3,1)', SOFT = 'cubic-bezier(.22,.61,.36,1)';
+  const Y = px => '0 ' + (px * D) + 'px';
+  let n = 0, last = null;
+
+  function play(el, from, dur, delay, ease){
+    if(!el) return;
+    const to = {opacity:1};
+    if('translate' in from) to.translate = '0 0';
+    if('scale'    in from) to.scale = '1';
+    if('clipPath' in from) to.clipPath = 'inset(-30% 0 -30% 0)';
+    const a = el.animate([from, to], {duration:dur, delay:delay, easing:ease, fill:'both'});
+    a.id = 'intro:' + n++;
+    last = a;
+  }
+
+  const links = document.querySelectorAll('#links a');
+
+  /* the frame settles */
+  play(nav,  {opacity:0, translate:Y(-9)},                                   620,   60, EXPO);
+  play(hintEl, {opacity:0, translate:Y(10)},                                  560,  640, SOFT);
+  play($('canvas').querySelector('.mark'), {opacity:0, translate:Y(6)},        520,  150, SOFT);
+  play($('canvas').querySelector('.wm'),   {opacity:0, translate:Y(6)},        520,  185, SOFT);
+  links.forEach(function(a, i){ play(a, {opacity:0, translate:Y(6)},         460, 215 + i*45, SOFT); });
+  play(burger, {opacity:0, translate:Y(6)},                                  460,  300, SOFT);
+  play($('canvas').querySelector('.nav .btn'), {opacity:0, translate:Y(6)},   500,  400, SOFT);
+  play($('lang'), {opacity:0, translate:Y(-9)},                                560,  120, EXPO);
+
+  /* context, then the message */
+  play($('canvas').querySelector('.badge'), {opacity:0, translate:Y(11), scale:.985},        560, 270, EXPO);
+  play($('h1a'),  {opacity:0, translate:Y(15), clipPath:'inset(100% 0 -30% 0)'},              900, 380, EXPO);
+  play($('h1b'),  {opacity:0, translate:Y(15), clipPath:'inset(100% 0 -30% 0)'},              900, 470, EXPO);
+  play($('sub1'), {opacity:0, translate:Y(10)},                                                620, 690, EXPO);
+  play($('sub2'), {opacity:0, translate:Y(10)},                                                620, 745, EXPO);
+  play($('canvas').querySelector('.cta2'), {opacity:0, translate:Y(13), scale:.985},           620, 830, EXPO);
+
+  /* the payoff — the wheel rises into depth, the mock lands in FRONT of it last */
+  play($('ring'),    {opacity:0, translate:Y(18), scale:.99},                                 950,  700, EXPO);
+  play($('browser'), {opacity:0, translate:Y(26)},                                            900,  900, EXPO);
+  play($('wa'),      {opacity:0, scale:.88},                                                  500, 1260, EXPO);
+
+  if(last) last.finished.then(settle, settle);   // nothing survives: the last
+                                                 // frame IS the authored design
+})();
+
+/* =====================================================================
+   STOREFRONT DRAWER
+   The page itself never scrolls (that is the shell's whole point), so the
+   store front is reached by pulling the mock up. Two moves only:
+     - translate the canvas up by exactly the mock's offset, so the mock's top
+       edge lands on the top of the stage
+     - give the mock the viewport's full height, measured in DESIGN px
+   The hero above is not touched, so until you pull, the composition is still
+   pixel-for-pixel as authored.
+   ===================================================================== */
+function mockTopDesign(){
+  const m = mockEl.getBoundingClientRect(), c = canvas.getBoundingClientRect();
+  return (m.top - c.top) / k;
+}
+
+function setPeek(on, force){
+  if(on === peeked && !force) return;
+  peeked = on;
+  stage.classList.toggle('peek', on);
+  hintEl.setAttribute('aria-expanded', on ? 'true' : 'false');
+  hintEl.querySelector('.lbl').textContent = on ? L().peekClose : L().peekOpen;
+  canvas.classList.add('anim');
+  mockEl.classList.add('anim');
+  if(on){
+    // negative, because translateY composes ADDITIVELY after scale()
+    canvas.style.setProperty('--peek', (-mockTopDesign()) + 'px');
+    mockEl.style.height = (window.innerHeight / k) + 'px';   // full stage, in design px
+  }else{
+    canvas.style.setProperty('--peek', '0px');
+    mockEl.style.height = '';
+  }
+  var done = function(){
+    canvas.classList.remove('anim');
+    mockEl.classList.remove('anim');
+    window.removeEventListener('transitionend', done);
+  };
+  window.addEventListener('transitionend', done);
+  // belt and braces if the transition never fires (reduced motion, hidden tab)
+  setTimeout(done, 900);
+}
+
+hintEl.addEventListener('click', function(){
+  if(!$('sheet').hidden || !$('leadForm').hidden) return;   // a dialog owns Escape
+  setPeek(!peeked);
+});
+
+/* wheel + touch: down pulls the storefront up, up puts the hero back */
+window.addEventListener('wheel', function(e){
+  if(!$('sheet').hidden || !$('leadForm').hidden) return;
+  if(Math.abs(e.deltaY) < 8) return;
+  const now = Date.now();
+  if(now - wheelLock < 700) return;
+  if(e.deltaY > 0 && !peeked){ wheelLock = now; setPeek(true); }
+  else if(e.deltaY < 0 && peeked){ wheelLock = now; setPeek(false); }
+}, {passive:true});
+
+var touchY = null;
+window.addEventListener('touchstart', function(e){ touchY = e.touches[0].clientY; }, {passive:true});
+window.addEventListener('touchend', function(e){
+  if(touchY === null) return;
+  if(!$('sheet').hidden || !$('leadForm').hidden){ touchY = null; return; }
+  // once open, a drag inside the store content is a scroll, not a drawer gesture
+  if(peeked && e.target && e.target.closest && e.target.closest('.pagebody')){ touchY = null; return; }
+  var dy = touchY - (e.changedTouches[0] ? e.changedTouches[0].clientY : touchY);
+  if(Math.abs(dy) > 60) setPeek(dy > 0);
+  touchY = null;
+}, {passive:true});
+
+window.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' && !$('sheet').hidden){ closeSheet(); return; }
+  if(e.key === 'Escape' && openProduct){ closeDetail(); return; }
+  if(e.key === 'Escape' && peeked){ setPeek(false); hintEl.focus(); return; }
+  // e.target is `window` for events dispatched at the document, and window has
+  // no closest() — guard before probing
+  if(e.target && e.target.closest && e.target.closest('input,textarea,select')) return;
+  if(!$('sheet').hidden || !$('leadForm').hidden) return;
+  if(e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === 'End'){ if(!peeked){ setPeek(true); e.preventDefault(); } }
+  else if(e.key === 'ArrowUp' || e.key === 'PageUp'){ if(peeked){ setPeek(false); e.preventDefault(); } }
+});
+
+/* ================= language switch ================= */
+document.getElementById('lang').addEventListener('click', function(e){
+  const b = e.target.closest('button[data-lang]');
+  if(b) applyLang(b.dataset.lang);
+});
+
+/* ================= go ================= */
+/* The official Tsingtao lockup sits in the badge's leading slot. It is
+   decorative — the label beside it already spells the brand — so the alt is
+   empty and the tile carries the accessible name instead. Wired down here
+   because $ and U are declared further down than the store section. */
+buildRing();            /* paint the ring before the first frame */
+(function(){
+  let initial = 'vi';
+  try{
+    const saved = localStorage.getItem('vertex-lang');
+    if(saved && I18N[saved]) initial = saved;
+    else{
+      const nav = (navigator.language || 'vi').toLowerCase();
+      if(nav.indexOf('zh') === 0) initial = 'zh';
+      else if(nav.indexOf('en') === 0) initial = 'en';
+    }
+  }catch(err){ /* private mode: fall through to the default */ }
+  applyLang(initial, {silent:true});
+})();
+
+resize();
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
+setTimeout(layout, 400);
+setTimeout(layout, 1400);
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

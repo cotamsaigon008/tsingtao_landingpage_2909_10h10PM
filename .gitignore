@@ -1,0 +1,21 @@
+# QA artefacts written by prep_images.py / fix089.py / banner.py
+.check/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Never commit credentials. The build reads destinations from constants in
+# src/template.html (SALES, SUPPORT); no token is ever needed to build.
+.env
+.env.*
+*.pem

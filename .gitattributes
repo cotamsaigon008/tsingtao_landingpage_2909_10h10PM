@@ -1,0 +1,17 @@
+# The deliverable and its source are text and must not drift between platforms:
+# a CRLF round-trip through a Windows editor would rewrite a 1.4 MB file's
+# every line and bury the real diff.
+*.html   text eol=lf
+*.css    text eol=lf
+*.js     text eol=lf
+*.py     text eol=lf
+*.md     text eol=lf
+.gitignore text eol=lf
+
+# binary — never touch
+*.webp   binary
+*.jpg    binary
+*.jpeg   binary
+*.png    binary
+*.ttf    binary
+*.woff2  binary
