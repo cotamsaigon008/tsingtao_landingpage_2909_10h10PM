@@ -1,0 +1,14 @@
+# Only index.html is served. It is fully self-contained — the 17 product
+# photos are already inlined as base64 — so the build scripts, the source
+# photographs and the catalogue are not needed on a static host, and shipping
+# 2.7 MB of them would only slow the upload.
+#
+# index.html is committed to git, so a fresh clone still deploys correctly
+# without running the build.
+
+src/
+assets/
+.check/
+README.md
+.gitignore
+.gitattributes
