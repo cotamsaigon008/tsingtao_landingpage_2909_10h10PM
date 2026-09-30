@@ -30,6 +30,11 @@ chk("official lockup inlined", "_logo" in h and h.count("data:image/webp;base64,
 chk("lockup lives in the nav, badge has no seal", 'id="brandLogo"' in h
     and 'id="brandMark"' not in h and ".badge i" not in css)
 chk("badge line is the brand name", h.count("badge: 'TSINGTAO VIETNAM'") == 3)
+# The static <head> is what crawlers, bookmarks and the tab title read before
+# any script runs, and SALES.subject is what lands in the sales inbox. All
+# three once carried the old project name, which no browser test can see.
+chk("no legacy project name survives",
+    not re.search(r"[Vv]ertex|Streamline the shop virtual", h))
 
 # ---------- pixel contract that must still hold ----------
 badge_body = block(".badge")[0][1]

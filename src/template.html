@@ -2,9 +2,9 @@
 <html lang="en-US">
 <head>
 <meta charset="utf-8">
-<title>Vision — Streamline the shop virtual</title>
+<title>TSINGTAO — Dòng bia chính hãng tại Việt Nam</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Vertex — a storefront for the Tsingtao range. Browse the lager, zero-alcohol and craft lines and order chilled.">
+<meta name="description" content="Dòng bia Tsingtao chính hãng tại Việt Nam: lager truyền thống, bia không cồn, bia thảo mộc và nước soda. Khám phá đủ 10 dòng sản phẩm và đăng ký nhận báo giá sỉ.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
@@ -1303,7 +1303,7 @@ const $ = id => document.getElementById(id);
    ===================================================================== */
 const CATALOG = {
   schema_version: '1.3',
-  brand: { id:'vertex', wordmark:'BREWER', kicker:'TSINGTAO', origin:'Qingdao, China', founded:1903 },
+  brand: { id:'tsingtao', wordmark:'BREWER', kicker:'TSINGTAO', origin:'Qingdao, China', founded:1903 },
   locales: ['vi','en','zh'],
   default_locale: 'vi',
   products: [
@@ -2505,7 +2505,7 @@ function formatSpecs(p){
 const SALES = {
   email:    'sales@tsingtao.com.vn',   // <- where enquiries should land
   endpoint: '',                        // <- e.g. 'https://formspree.io/f/xxxxxxx'
-  subject:  'Lead enquiry — Vertex / Tsingtao'
+  subject:  'Lead enquiry — Tsingtao Vietnam'
 };
 
 /* The Support item in the nav is a single tap, so these two values are the whole
@@ -3097,7 +3097,7 @@ $('navmenu').addEventListener('click', function(e){
 });
 /* remember the locale, but a storage failure must never break the page */
 $('lang').addEventListener('click', function(){
-  try{ localStorage.setItem('vertex-lang', LANG); }catch(err){}
+  try{ localStorage.setItem('tsingtao-lang', LANG); }catch(err){}
 });
 
 /* =====================================================================
@@ -3280,7 +3280,7 @@ buildRing();            /* paint the ring before the first frame */
 (function(){
   let initial = 'vi';
   try{
-    const saved = localStorage.getItem('vertex-lang');
+    const saved = localStorage.getItem('tsingtao-lang');
     if(saved && I18N[saved]) initial = saved;
     else{
       const nav = (navigator.language || 'vi').toLowerCase();
