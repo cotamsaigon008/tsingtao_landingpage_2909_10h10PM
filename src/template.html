@@ -2102,6 +2102,15 @@ function applyLang(lang, opts){
   const next = I18N[lang] ? lang : 'en';
   const changed = next !== LANG;
   LANG = next;
+  /* Remember the locale HERE, not in a click listener on #lang. A listener on
+     the element fires BEFORE a delegated document handler, so it wrote the
+     language you were on rather than the one you had just picked - pick 中文,
+     get 中文 on screen, reload, and be back in English. And the .sbar switch
+     inside the browser mock is not a descendant of #lang at all, so on a phone
+     nothing was saved whatsoever. Writing it in the one function that sets LANG
+     means every path into it persists, including a switch added later. A
+     storage failure must never break the page. */
+  try{ localStorage.setItem('tsingtao-lang', LANG); }catch(err){}
   const s = L();
 
   document.documentElement.lang = next === 'zh' ? 'zh-Hans' : next;
@@ -3094,10 +3103,6 @@ document.addEventListener('keydown', function(e){
 });
 $('navmenu').addEventListener('click', function(e){
   if(e.target.closest('a')) closeMenu();
-});
-/* remember the locale, but a storage failure must never break the page */
-$('lang').addEventListener('click', function(){
-  try{ localStorage.setItem('tsingtao-lang', LANG); }catch(err){}
 });
 
 /* =====================================================================
