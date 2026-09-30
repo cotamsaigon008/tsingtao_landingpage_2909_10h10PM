@@ -29,6 +29,9 @@ KEY = {
     "banner": "banner",
     # the official Tsingtao lockup, pulled from the brand's own site
     "_logo": "_logo",
+    # Zalo Chat mark, brand blue #0060F8. A real trademark: swap the file
+    # rather than redrawing it if the client supplies their own.
+    "_zalo": "_zalo",
 }
 
 MIME = {"webp": "image/webp", "png": "image/png", "jpg": "image/jpeg"}
@@ -51,11 +54,15 @@ for key, stem in KEY.items():
 
 # utf-8-sig: tolerate a stray BOM. A PowerShell Set-Content -Encoding UTF8 once
 # wrote one, and the doctype assertion below is what caught it.
-html = open(TPL, encoding="utf-8-sig").read()
+html = open(TPL, encoding="utf-8-sig", newline="").read()
 assert html.startswith("<!doctype html>"), "document must start with the doctype, not a BOM"
 assert "/*__DATA__*/{}" in html, "placeholder missing"
 html = html.replace("/*__DATA__*/{}", json.dumps(out, separators=(",", ":")))
-open(DEST, "w", encoding="utf-8").write(html)
+# newline="\n" or Windows silently rewrites every \n to \r\n on write, and the
+# committed file (LF, per .gitattributes) then differs from the built one by a
+# few KB of line endings — same page, different bytes, and a diff that looks
+# like content churn on every machine that builds it.
+open(DEST, "w", encoding="utf-8", newline="\n").write(html)
 
 print("images :", len(out))
 print("raw    : %.2f MB" % (total / 1024 / 1024))

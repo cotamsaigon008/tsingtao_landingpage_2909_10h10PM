@@ -1,7 +1,6 @@
 import re, os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 P = os.path.join(ROOT, "index.html")
 h = open(P, encoding="utf-8").read()
 css = h[h.find("<style>"):h.find("</style>")]
@@ -26,7 +25,7 @@ chk("brand tokens declared from the live site", all(t in h for t in
 chk("page base is the site background", "background:var(--tsg-forest-950)" in css)
 chk("no legacy cyan survives", not re.search(
     r"#9ad9ec|#3ec8e4|#5ad2f0|#46afc8|#a9aeb5|60,224,255|130,180,255", h))
-chk("official lockup inlined", "_logo" in h and h.count("data:image/webp;base64,") == 17)
+chk("official lockup inlined", "_logo" in h and h.count("data:image/webp;base64,") == 18)
 # the lockup now lives in the nav only; the badge carries no image at all
 chk("lockup lives in the nav, badge has no seal", 'id="brandLogo"' in h
     and 'id="brandMark"' not in h and ".badge i" not in css)

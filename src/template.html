@@ -679,10 +679,10 @@ html.intro .lang{opacity:0;translate:0 -9px}
 .fbtn svg{width:31px;height:31px}
 /* Stacked pair: identical geometry via .fbtn, colour by modifier, and only the
    vertical offset differs so the two can never look mismatched. */
+/* The mark is a filled white bubble, so it needs no plate behind it — a blue
+   disc would only compete with the outline the mark already has. */
 .fbtn.zalo{bottom:88px}
-.fbtn.zalo svg{width:27px;height:27px}
-.fbtn.zalo::before{content:"";position:absolute;inset:0;border-radius:50%;
-  box-shadow:0 0 0 2px rgba(0,104,255,.5)}
+.fbtn.zalo img{width:30px;height:30px;display:block;border-radius:0}
 .wa::after{content:"";position:absolute;inset:0;border-radius:50%;
   border:2px solid rgba(37,211,102,.5);animation:pulse 2.8s ease-out infinite}
 @keyframes pulse{0%{transform:scale(1);opacity:.75}70%{transform:scale(1.4);opacity:0}
@@ -1254,12 +1254,12 @@ html.intro .fbtn{opacity:0;scale:.88}
     <span class="toastbar" aria-hidden="true"></span>
   </div>
 
+  <!-- The real Zalo Chat mark: a white speech bubble, blue outline, blue
+       wordmark, brand blue #0060F8. Not redrawn — a hand-drawn approximation of
+       a trademark is exactly the kind of thing that gets a brand email. Swapped
+       in from assets/_zalo.webp; replace that file to change it. -->
   <a class="fbtn zalo" id="zaloBtn" href="#" aria-label="Zalo">
-    <svg viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false">
-      <rect width="32" height="32" rx="8" fill="#0068FF"/>
-      <path d="M10 10.4h12.4M10 21.6h12.4M10.4 10.4 21.6 21.6" stroke="#fff"
-            stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
+    <img id="zaloMark" alt="" src="">
   </a>
 
   <a class="fbtn wa" href="#" aria-label="WhatsApp">
@@ -3297,6 +3297,7 @@ buildRing();            /* paint the ring before the first frame */
    anywhere earlier is a temporal-dead-zone crash that kills the whole script. */
 const zaloBtn = $('zaloBtn'), waBtn = document.querySelector('.wa[aria-label="WhatsApp"]');
 zaloBtn.href = CHANNELS.zalo;
+$('zaloMark').src = U('_zalo');
 waBtn.href   = CHANNELS.whatsapp;
 [zaloBtn, waBtn].forEach(function(a){ a.target = '_blank'; a.rel = 'noopener'; });
 
