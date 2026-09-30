@@ -19,3 +19,8 @@ Thumbs.db
 .env
 .env.*
 *.pem
+
+.vercel
+
+# local QA harness (served so it can iframe the page same-origin)
+_one.html
